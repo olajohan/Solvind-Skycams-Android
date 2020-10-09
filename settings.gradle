@@ -1,0 +1,4 @@
+include ':androidData'
+include ':domain'
+include ':presentation'
+rootProject.name = "Solvind Skycams"

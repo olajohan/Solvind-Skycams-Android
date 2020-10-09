@@ -1,0 +1,18 @@
+apply plugin: 'java-library'
+apply plugin: 'kotlin'
+apply plugin: 'kotlin-kapt'
+
+dependencies {
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$rootProject.coroutinesVersion"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.3.9"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$rootProject.junitJupiterVersion"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:$rootProject.junitJupiterVersion"
+    testImplementation "io.mockk:mockk:$rootProject.mockkVersion"
+
+    implementation 'com.google.dagger:dagger:2.29.1'
+    kapt 'com.google.dagger:dagger-compiler:2.29.1'
+}
+
+sourceCompatibility = rootProject.srcCom
+targetCompatibility = rootProject.tarCom
