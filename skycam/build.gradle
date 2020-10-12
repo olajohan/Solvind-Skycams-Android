@@ -1,0 +1,63 @@
+apply plugin: "com.android.dynamic-feature"
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+apply plugin: "androidx.navigation.safeargs.kotlin"
+
+
+android {
+    compileSdkVersion rootProject.compileSdk
+    buildToolsVersion rootProject.buildToolsVersion
+
+    compileOptions {
+        sourceCompatibility srcCom
+        targetCompatibility tarCom
+    }
+
+    defaultConfig {
+        minSdkVersion rootProject.minSdk
+        targetSdkVersion rootProject.targetSdk
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildFeatures {
+        dataBinding true
+    }
+
+    kotlinOptions {
+        jvmTarget = rootProject.jvmTarget
+    }
+
+}
+
+dependencies {
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation project(":app")
+    implementation project(":core")
+
+    implementation "androidx.core:core-ktx:$rootProject.androidxCoreVersion"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$rootProject.kotlinVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$rootProject.coroutinesVersion"
+
+    implementation "com.google.dagger:dagger:$rootProject.daggerVersion"
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
+    kapt "com.google.dagger:dagger-compiler:$rootProject.daggerVersion"
+
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$rootProject.lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$rootProject.lifecycleVersion"
+
+    // Android Testing
+    androidTestImplementation "androidx.test.espresso:espresso-core:$rootProject.androidxEspressoVersion"
+    androidTestImplementation "androidx.test.ext:junit:$rootProject.androidxTestExtJunitVersion"
+    androidTestImplementation "androidx.test.ext:truth:$rootProject.androidxTestExtTruthVersion"
+    androidTestImplementation "com.google.truth:truth:$rootProject.googleTruthVersion"
+    androidTestImplementation "androidx.arch.core:core-testing:$rootProject.androidxArchCoreTestingVersion"
+    androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$rootProject.kotlinxCoroutinesTestVersion"
+
+    // Testing
+    testImplementation "io.mockk:mockk:$rootProject.mockkVersion"
+    testImplementation "junit:junit:$rootProject.junitVersion"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$rootProject.kotlinxCoroutinesTestVersion"
+}

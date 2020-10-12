@@ -1,4 +1,7 @@
-include ':androidData'
-include ':domain'
-include ':presentation'
+include ':core'
+include ':auth'
+include ':map'
+include ':login'
+include ':skycam'
+include ':app'
 rootProject.name = "Solvind Skycams"

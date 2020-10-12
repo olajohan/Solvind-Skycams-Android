@@ -1,0 +1,92 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'dagger.hilt.android.plugin'
+apply plugin: 'com.google.gms.google-services'
+apply plugin: "androidx.navigation.safeargs.kotlin"
+
+
+android {
+    compileSdkVersion rootProject.compileSdk
+    buildToolsVersion rootProject.buildToolsVersion
+
+    defaultConfig {
+        applicationId "com.lyngennorth.solvindskycams"
+        minSdkVersion rootProject.minSdk
+        targetSdkVersion rootProject.targetSdk
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    compileOptions {
+        sourceCompatibility rootProject.srcCom
+        targetCompatibility rootProject.tarCom
+    }
+    kotlinOptions {
+        jvmTarget = rootProject.jvmTarget
+    }
+
+    buildFeatures {
+        dataBinding true
+    }
+
+    buildTypes {
+        release {
+            testCoverageEnabled = true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    dynamicFeatures = [':skycam', ':login', ':map']
+
+    useLibrary 'android.test.runner'
+    useLibrary 'android.test.base'
+    useLibrary 'android.test.mock'
+}
+
+dependencies {
+
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+    api project(":auth")
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$rootProject.kotlinVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$rootProject.coroutinesVersion"
+
+    implementation "androidx.core:core-ktx:$rootProject.androidxCoreVersion"
+
+    implementation "androidx.appcompat:appcompat:$rootProject.appCompatVersion"
+    implementation "androidx.constraintlayout:constraintlayout:$rootProject.constraintLayoutVersion"
+
+    api "androidx.navigation:navigation-fragment-ktx:$rootProject.navigationVersion"
+    api "androidx.navigation:navigation-ui-ktx:$rootProject.navigationVersion"
+    api "androidx.navigation:navigation-dynamic-features-fragment:$rootProject.navigationVersion"
+
+    api "androidx.hilt:hilt-lifecycle-viewmodel:$rootProject.hiltLifecycleViewModelKtxVersion"
+    api "com.google.dagger:hilt-android:$rootProject.hiltVersion"
+    kapt "com.google.dagger:hilt-android-compiler:$rootProject.hiltVersion"
+    kapt "androidx.hilt:hilt-compiler:$rootProject.hiltCompilerVersion"
+
+    api "com.jakewharton.timber:timber:$rootProject.timberVersion"
+
+    // Import the BoM for the Firebase platform
+    implementation platform("com.google.firebase:firebase-bom:$rootProject.firebaseBomVersion")
+
+    // Declare the dependency for the Cloud Firestore library
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    api 'com.google.firebase:firebase-firestore-ktx'
+    api "com.google.firebase:firebase-auth-ktx"
+
+    // Android Testing
+    androidTestImplementation "androidx.test.espresso:espresso-core:$rootProject.androidxEspressoVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-accessibility:$rootProject.androidxEspressoVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-contrib:$rootProject.androidxEspressoVersion"
+    androidTestImplementation "androidx.test.ext:junit:$rootProject.androidxTestExtJunitVersion"
+    androidTestImplementation "androidx.test:runner:$rootProject.androidxTestRunnerVersion"
+    androidTestImplementation "androidx.test:rules:$rootProject.androidxTestRulesVersion"
+    androidTestImplementation "com.google.truth:truth:$rootProject.googleTruthVersion"
+
+    // Testing
+    testImplementation "io.mockk:mockk:$rootProject.mockkVersion"
+    testImplementation "junit:junit:$rootProject.junitVersion"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$rootProject.kotlinxCoroutinesTestVersion"
+
+}

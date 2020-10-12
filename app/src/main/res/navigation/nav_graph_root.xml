@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph_root"
+    app:startDestination="@id/nav_graph_skycam">
+
+    <include-dynamic
+        android:id="@+id/nav_graph_skycam"
+        app:moduleName="skycam"
+        app:graphResName="nav_graph_skycam"
+        app:graphPackage="com.lyngennorth.solvindskycams.skycam">
+        <action
+            android:id="@+id/action_nav_graph_skycam_to_nav_graph_login"
+            app:destination="@id/nav_graph_login" />
+    </include-dynamic>
+
+    <include-dynamic
+        android:id="@+id/nav_graph_login"
+        app:moduleName="login"
+        app:graphResName="nav_graph_login"
+        app:graphPackage="com.lyngennorth.solvindskycams.login"
+        />
+
+</navigation>
