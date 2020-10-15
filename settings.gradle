@@ -1,7 +1,5 @@
 include ':core'
-include ':auth'
 include ':map'
-include ':login'
 include ':skycam'
 include ':app'
-rootProject.name = "Solvind Skycams"
+rootProject.name = "Solvind"

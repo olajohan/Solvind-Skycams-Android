@@ -6,10 +6,10 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$rootProject.kotlinVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$rootProject.coroutinesVersion"
 
-
-    // Testing
-    testImplementation "io.mockk:mockk:$rootProject.mockkVersion"
+    // Required -- JUnit 4 framework
     testImplementation "junit:junit:$rootProject.junitVersion"
+
+    testImplementation "io.mockk:mockk:$rootProject.mockkVersion"
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$rootProject.kotlinxCoroutinesTestVersion"
 }
 

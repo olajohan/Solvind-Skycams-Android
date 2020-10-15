@@ -5,15 +5,18 @@
     android:id="@+id/nav_graph_root"
     app:startDestination="@id/nav_graph_skycam">
 
+    <action
+        android:id="@+id/action_global_to_nav_graph_login"
+        app:destination="@id/nav_graph_login"
+        app:popUpTo="@id/nav_graph_root"
+        app:popUpToInclusive="true" />
+
     <include-dynamic
         android:id="@+id/nav_graph_skycam"
         app:moduleName="skycam"
         app:graphResName="nav_graph_skycam"
-        app:graphPackage="com.lyngennorth.solvindskycams.skycam">
-        <action
-            android:id="@+id/action_nav_graph_skycam_to_nav_graph_login"
-            app:destination="@id/nav_graph_login" />
-    </include-dynamic>
+        app:graphPackage="com.lyngennorth.solvindskycams.skycam"/>
+
 
     <include-dynamic
         android:id="@+id/nav_graph_login"
