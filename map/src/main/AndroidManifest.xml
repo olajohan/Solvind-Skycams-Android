@@ -1,12 +1,11 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:dist="http://schemas.android.com/apk/distribution"
-    package="com.solvindskycams.map">
+<manifest xmlns:dist="http://schemas.android.com/apk/distribution"
+    package="com.solvind.skycams.map">
 
     <dist:module
         dist:instant="false"
         dist:title="@string/title_map">
         <dist:delivery>
-            <dist:on-demand />
+            <dist:install-time />
         </dist:delivery>
         <dist:fusing dist:include="true" />
     </dist:module>

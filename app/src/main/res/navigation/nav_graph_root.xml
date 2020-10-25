@@ -1,28 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<navigation
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_graph_root"
-    app:startDestination="@id/nav_graph_skycam">
-
-    <action
-        android:id="@+id/action_global_to_nav_graph_login"
-        app:destination="@id/nav_graph_login"
-        app:popUpTo="@id/nav_graph_root"
-        app:popUpToInclusive="true" />
+    app:startDestination="@id/skycam_feature">
 
     <include-dynamic
-        android:id="@+id/nav_graph_skycam"
-        app:moduleName="skycam"
+        android:id="@+id/skycam_feature"
+        android:name="com.solvind.skycams"
         app:graphResName="nav_graph_skycam"
-        app:graphPackage="com.lyngennorth.solvindskycams.skycam"/>
-
-
-    <include-dynamic
-        android:id="@+id/nav_graph_login"
-        app:moduleName="login"
-        app:graphResName="nav_graph_login"
-        app:graphPackage="com.lyngennorth.solvindskycams.login"
-        />
+        app:moduleName="skycam" />
 
 </navigation>

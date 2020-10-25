@@ -4,7 +4,6 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 apply plugin: "androidx.navigation.safeargs.kotlin"
 
-
 android {
     compileSdkVersion rootProject.compileSdk
     buildToolsVersion rootProject.buildToolsVersion
@@ -24,22 +23,13 @@ android {
         consumerProguardFiles "consumer-rules.pro"
     }
 
-    useLibrary 'android.test.runner'
-    useLibrary 'android.test.base'
-    useLibrary 'android.test.mock'
-
     buildFeatures {
+        viewBinding true
         dataBinding true
     }
 
     kotlinOptions {
         jvmTarget = rootProject.jvmTarget
-    }
-
-    testOptions {
-        unitTests {
-            includeAndroidResources = true
-        }
     }
 
 }
@@ -56,6 +46,11 @@ dependencies {
 
     implementation "com.google.dagger:dagger:$rootProject.daggerVersion"
     implementation "androidx.constraintlayout:constraintlayout:$rootProject.constraintLayoutVersion"
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0'
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
+    implementation "androidx.recyclerview:recyclerview:$rootProject.recyclerViewVersion"
+    implementation 'com.google.android.material:material:1.2.1'
     kapt "com.google.dagger:dagger-compiler:$rootProject.daggerVersion"
 
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:$rootProject.lifecycleVersion"
@@ -63,51 +58,27 @@ dependencies {
 
 
     // ------------------------------------------ TESTING ------------------------------------------
-    androidTestImplementation "androidx.test:core:$rootProject.androidxTestCore"
-    androidTestImplementation "androidx.arch.core:core-testing:$rootProject.androidxArchCoreTestingVersion"
 
-    // Kotlin Coroutines test
-    androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$rootProject.kotlinxCoroutinesTestVersion"
-
-    // AndroidJUnitRunner and JUnit Rules
-    androidTestImplementation "androidx.test:runner:$rootProject.androidxTestCore"
-    testImplementation "androidx.test:runner:$rootProject.androidxTestCore"
-    androidTestImplementation "androidx.test:rules:$rootProject.androidxTestCore"
-
-    // Assertions
-    androidTestImplementation "androidx.test.ext:junit:$rootProject.androidxTestExtJunitVersion"
-    testImplementation "androidx.test.ext:junit:$rootProject.androidxTestExtJunitVersion"
-    androidTestImplementation "androidx.test.ext:truth:$rootProject.androidxTestCore"
-    androidTestImplementation "com.google.truth:truth:$rootProject.googleTruthVersion"
-
-    // Espresso dependencies
+    // Espresso
     androidTestImplementation "androidx.test.espresso:espresso-core:$rootProject.androidxEspressoVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-contrib:$rootProject.androidxEspressoVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-intents:$rootProject.androidxEspressoVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-accessibility:$rootProject.androidxEspressoVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-web:$rootProject.androidxEspressoVersion"
-    androidTestImplementation "androidx.test.espresso.idling:idling-concurrent:$rootProject.androidxEspressoVersion"
 
-    // The following Espresso dependency can be either "implementation"
-    // or "androidTestImplementation", depending on whether you want the
-    // dependency to appear on your APK's compile classpath or the test APK
-    // classpath.
-    androidTestImplementation "androidx.test.espresso:espresso-idling-resource:$rootProject.androidxEspressoVersion"
-
-    // Optional -- Robolectric environment
-    testImplementation "org.robolectric:robolectric:$rootProject.robolectricVersion"
-    testImplementation "androidx.test:core:$rootProject.androidxTestCore"
-
-    // Required -- JUnit 4 framework
+    // jUnit
     testImplementation "junit:junit:$rootProject.junitVersion"
 
-    androidTestImplementation "io.mockk:mockk-android:$rootProject.mockkVersion"
-    testImplementation "io.mockk:mockk:$rootProject.mockkVersion"
+    // Truth
+    testImplementation "com.google.truth:truth:$rootProject.googleTruthVersion"
+    testImplementation "com.google.truth.extensions:truth-java8-extension:$rootProject.googleTruthVersion"
 
-    // Arch core
-    testImplementation "androidx.arch.core:core-testing:$rootProject.androidxArchCoreTestingVersion"
+    // Mockito
+    testImplementation "org.mockito:mockito-core:$rootProject.mockitoVersion"
+
+    // Androidx
+    testImplementation "androidx.test:core:$rootProject.androidxTestCore"
+    androidTestImplementation "androidx.test:runner:$rootProject.androidxTestCore"
+    androidTestImplementation "androidx.test:rules:$rootProject.androidxTestCore"
+    androidTestImplementation "androidx.test.ext:junit:$rootProject.androidxTestExtJunitVersion"
+    androidTestImplementation "androidx.test.ext:truth:$rootProject.androidxTestExtTruthVersion"
 
     // Coroutines
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$rootProject.kotlinxCoroutinesTestVersion"
-    androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$rootProject.kotlinxCoroutinesTestVersion"
 }

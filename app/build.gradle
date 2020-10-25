@@ -6,13 +6,12 @@ apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'com.google.gms.google-services'
 apply plugin: "androidx.navigation.safeargs.kotlin"
 
-
 android {
     compileSdkVersion rootProject.compileSdk
     buildToolsVersion rootProject.buildToolsVersion
 
     defaultConfig {
-        applicationId 'com.solvindskycams.app'
+        applicationId "com.solvind.skycams.app"
         minSdkVersion rootProject.minSdk
         targetSdkVersion rootProject.targetSdk
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -32,12 +31,14 @@ android {
         dataBinding true
     }
 
+
     buildTypes {
         release {
             testCoverageEnabled = true
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+
     }
     dynamicFeatures = [':skycam', ':map']
 
@@ -53,17 +54,19 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$rootProject.kotlinVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$rootProject.coroutinesVersion"
 
-    implementation 'com.firebaseui:firebase-ui-auth:6.2.0'
-    implementation 'com.facebook.android:facebook-android-sdk:5.0.0'
-
     implementation "androidx.core:core-ktx:$rootProject.androidxCoreVersion"
 
     implementation "androidx.appcompat:appcompat:$rootProject.appCompatVersion"
     implementation "androidx.constraintlayout:constraintlayout:$rootProject.constraintLayoutVersion"
 
+    api "androidx.fragment:fragment-ktx:$rootProject.fragmentKtxVersion"
+    api "androidx.lifecycle:lifecycle-livedata-ktx:$rootProject.liveDataKtxVersion"
+
     api "androidx.navigation:navigation-fragment-ktx:$rootProject.navigationVersion"
     api "androidx.navigation:navigation-ui-ktx:$rootProject.navigationVersion"
     api "androidx.navigation:navigation-dynamic-features-fragment:$rootProject.navigationVersion"
+
+    api "com.google.android.material:material:$rootProject.materialDesignVersion"
 
     api "androidx.hilt:hilt-lifecycle-viewmodel:$rootProject.hiltLifecycleViewModelKtxVersion"
     api "com.google.dagger:hilt-android:$rootProject.hiltVersion"
@@ -78,51 +81,14 @@ dependencies {
     // Declare the dependency for the Cloud Firestore library
     // When using the BoM, you don't specify versions in Firebase library dependencies
     api "com.google.firebase:firebase-firestore-ktx"
+    api 'com.google.firebase:firebase-analytics-ktx'
     api "com.google.firebase:firebase-auth-ktx"
     api "com.google.firebase:firebase-common-ktx"
-    api 'com.google.firebase:firebase-storage'
+    api 'com.google.firebase:firebase-storage-ktx'
+    implementation 'com.firebaseui:firebase-ui-auth:6.2.0'
+    implementation 'com.facebook.android:facebook-android-sdk:5.0.0'
 
     api "io.coil-kt:coil:$rootProject.coilVersion"
     api "com.github.rosariopfernandes:firecoil:$rootProject.firecoilVersion"
-
-    // ------------------------------------------ TESTING ------------------------------------------
-    androidTestImplementation "androidx.test:core:$rootProject.androidxTestCore"
-    androidTestImplementation "androidx.arch.core:core-testing:$rootProject.androidxArchCoreTestingVersion"
-
-    // Kotlin Coroutines test
-    androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$rootProject.kotlinxCoroutinesTestVersion"
-
-    // AndroidJUnitRunner and JUnit Rules
-    androidTestImplementation "androidx.test:runner:$rootProject.androidxTestCore"
-    androidTestImplementation "androidx.test:rules:$rootProject.androidxTestCore"
-
-    // Assertions
-    androidTestImplementation "androidx.test.ext:junit:$rootProject.androidxTestExtJunitVersion"
-    androidTestImplementation "androidx.test.ext:truth:$rootProject.androidxTestCore"
-    androidTestImplementation "com.google.truth:truth:$rootProject.googleTruthVersion"
-
-    // Espresso dependencies
-    androidTestImplementation "androidx.test.espresso:espresso-core:$rootProject.androidxEspressoVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-contrib:$rootProject.androidxEspressoVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-intents:$rootProject.androidxEspressoVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-accessibility:$rootProject.androidxEspressoVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-web:$rootProject.androidxEspressoVersion"
-    androidTestImplementation "androidx.test.espresso.idling:idling-concurrent:$rootProject.androidxEspressoVersion"
-
-    // The following Espresso dependency can be either "implementation"
-    // or "androidTestImplementation", depending on whether you want the
-    // dependency to appear on your APK's compile classpath or the test APK
-    // classpath.
-    androidTestImplementation "androidx.test.espresso:espresso-idling-resource:$rootProject.androidxEspressoVersion"
-
-    // Optional -- Robolectric environment
-    testImplementation "androidx.test:core:$rootProject.androidxTestCore"
-
-    // Required -- JUnit 4 framework
-    testImplementation "junit:junit:$rootProject.junitVersion"
-
-    androidTestImplementation "io.mockk:mockk-android:$rootProject.mockkVersion"
-    testImplementation "io.mockk:mockk:$rootProject.mockkVersion"
-    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$rootProject.kotlinxCoroutinesTestVersion"
 
 }

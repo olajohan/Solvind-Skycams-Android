@@ -1,17 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     app:startDestination="@id/home_fragment">
 
     <fragment
         android:id="@+id/home_fragment"
-        android:name="com.lyngennorth.solvindskycams.skycam.presentation.list.HomeFragment"
-        android:label="Home Fragment">
-
+        android:name="com.solvind.skycams.skycam.presentation.list.HomeFragment"
+        android:label="Solvind Skycams">
         <action
-            android:id="@+id/action_home_to_login"
-            app:destination="@id/nav_graph_login"
-            />
-    </fragment>
+            android:id="@+id/action_home_fragment_to_singleSkycamFragment"
+            app:destination="@id/singleSkycamFragment"
+            app:launchSingleTop="false"
+            app:popUpTo="@id/home_fragment">
 
+            <argument
+                android:name="skycamKey"
+                app:argType="string" />
+            <argument
+                android:name="skycamName"
+                app:argType="string" />
+            <argument
+                android:name="skycamMainImage"
+                app:argType="string" />
+
+        </action>
+
+
+    </fragment>
+    <fragment
+        android:id="@+id/singleSkycamFragment"
+        android:name="com.solvind.skycams.skycam.presentation.single.SingleSkycamFragment"
+        android:label="{skycamName}"
+        tools:layout="@layout/single_skycam_fragment">
+
+        <argument
+            android:name="skycamKey"
+            app:argType="string" />
+        <argument
+            android:name="skycamName"
+            app:argType="string" />
+        <argument
+            android:name="skycamMainImage"
+            app:argType="string" />
+
+    </fragment>
 </navigation>
