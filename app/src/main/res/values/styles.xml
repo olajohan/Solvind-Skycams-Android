@@ -7,6 +7,9 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <item name="android:colorBackground">@color/darkGrey</item>
+        <item name="colorSurface">@color/lightGrey</item>
+        <item name="colorOnSurface">@color/lightMediumGrey</item>
     </style>
 
 </resources>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/logo_imageview"
+                android:layout_width="203dp"
+                android:layout_height="200dp"
+                android:layout_marginTop="32dp"
+                android:adjustViewBounds="true"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/ic_solvind" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/info_textView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="@string/sign_in_to_start_receiving_real_time_aurora_alerts"
+                app:layout_constraintEnd_toEndOf="@+id/logo_imageview"
+                app:layout_constraintStart_toStartOf="@+id/logo_imageview"
+                app:layout_constraintTop_toBottomOf="@+id/logo_imageview" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/signIn_anon_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/continue_as_guest"
+                app:icon="@drawable/fui_ic_anonymous_white_24dp"
+                app:layout_constraintEnd_toEndOf="@+id/info_textView"
+                app:layout_constraintHorizontal_bias="0.532"
+                app:layout_constraintStart_toStartOf="@+id/info_textView"
+                app:layout_constraintTop_toBottomOf="@+id/info_textView" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/signIn_facebook_button"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/facebook"
+                app:icon="@drawable/com_facebook_button_login_logo"
+                app:layout_constraintEnd_toEndOf="@+id/signIn_anon_button"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintStart_toStartOf="@+id/signIn_anon_button"
+                app:layout_constraintTop_toBottomOf="@+id/signIn_anon_button" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tos_textView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="32dp"
+                android:textAlignment="center"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@+id/info_textView"
+                app:layout_constraintStart_toStartOf="@+id/info_textView"
+                app:layout_constraintTop_toBottomOf="@+id/signIn_facebook_button"
+                app:layout_constraintVertical_bias="0.0"
+                tools:text="Terms and conditions" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

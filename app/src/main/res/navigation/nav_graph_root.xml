@@ -2,12 +2,41 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_graph_root"
-    app:startDestination="@id/skycam_feature">
+    app:startDestination="@id/homeFragment">
 
-    <include-dynamic
-        android:id="@+id/skycam_feature"
-        android:name="com.solvind.skycams"
-        app:graphResName="nav_graph_skycam"
-        app:moduleName="skycam" />
+    <!-- Global actions -->
+    <action
+        android:id="@+id/action_navigate_to_single"
+        app:destination="@id/singleSkycamFragment">
+        <argument
+            android:name="skycamKey"
+            app:argType="string" />
+        <argument
+            android:name="skycamName"
+            app:argType="string" />
+        <argument
+            android:name="skycamMainImage"
+            app:argType="string" />
+    </action>
 
+    <!-- Fragments -->
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.solvind.skycams.app.presentation.home.HomeFragment"
+        android:label="Solvind Skycams"/>
+    <fragment
+        android:id="@+id/singleSkycamFragment"
+        android:name="com.solvind.skycams.app.presentation.single.SingleSkycamFragment"
+        android:label="{skycamName}">
+        <argument
+            android:name="skycamKey"
+            app:argType="string" />
+        <argument
+            android:name="skycamName"
+            app:argType="string" />
+        <argument
+            android:name="skycamMainImage"
+            app:argType="string" />
+    </fragment>
 </navigation>

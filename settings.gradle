@@ -1,5 +1,2 @@
-include ':core'
-include ':map'
-include ':skycam'
 include ':app'
 rootProject.name = "Skycams"

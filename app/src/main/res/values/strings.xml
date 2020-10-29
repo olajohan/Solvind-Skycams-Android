@@ -8,4 +8,16 @@
     <string name="facebook_application_id" translatable="false">1207350812997287</string>
     <string name="facebook_login_protocol_scheme" translatable="false">fb1207350812997287</string>
 
+    <!-- Other UI -->
+    <string name="continue_as_guest">Continue as guest</string>
+    <string name="facebook">FACEBOOK</string>
+    <string name="sign_in_to_start_receiving_real_time_aurora_alerts">Sign in to start receiving real time aurora alerts.</string>
+    <string name="foreground_notification_channel_name">Passive Foreground Notifications</string>
+    <string name="foreground_notification_channel_description">
+        Used for displaying passive notifications when a service is happening in the background. e.g
+        The Aurora Alarm. These notifications don\'t interrupt you with alarms. You must keep this notification on
+        to see that the alarm service is running in the background.
+    </string>
+    <string name="clear_all_alarms">STOP</string>
+
 </resources>
