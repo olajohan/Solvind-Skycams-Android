@@ -10,9 +10,11 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupWithNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.solvind.skycams.app.R
+import com.solvind.skycams.app.presentation.ads.IAdsProvider
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.fragment_home.view.*
 import timber.log.Timber
+import javax.inject.Inject
 
 
 /**
@@ -22,12 +24,18 @@ import timber.log.Timber
 @AndroidEntryPoint
 class HomeFragment() : Fragment(R.layout.fragment_home) {
 
+    @Inject lateinit var mAdsProvider: IAdsProvider
     private lateinit var mSkycamAdapter: SkycamAdapter
     private val mViewModel: HomeViewModel by viewModels()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mSkycamAdapter = SkycamAdapter(mViewModel, mViewModel, viewLifecycleOwner)
+        mSkycamAdapter = SkycamAdapter(
+            mViewModel,
+            mViewModel,
+            this,
+            mAdsProvider
+            )
         val navController = findNavController()
         val appBarConfigureation = AppBarConfiguration(navController.graph)
         view.findViewById<Toolbar>(R.id.toolbar).setupWithNavController(navController, appBarConfigureation)
@@ -45,5 +53,7 @@ class HomeFragment() : Fragment(R.layout.fragment_home) {
                 is HomeViewModel.ViewState.Failed -> Timber.i("Failed")
             }
         }
+
+
     }
 }

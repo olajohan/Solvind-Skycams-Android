@@ -13,6 +13,9 @@ import javax.inject.Inject
  * 1. Get the current alarm available until for a single skycam
  * 2. If the alarmtime is in the past take the present epochseconds and add the extra seconds
  *  - If the alarmtime is in the future, take the future epochseoconds and add the extra seconds
+ *
+ *  If the current alarm is not found, we insert a new record with a new alarm time of
+ *  the the current instant plus the provided seconds.
  * */
 open class UpdateAlarmTimeUseCase @Inject constructor(
     private val repo: IAlarmRepo,
@@ -28,6 +31,7 @@ open class UpdateAlarmTimeUseCase @Inject constructor(
     override suspend fun run(params: Params): Resource<Unit> {
         if (params.plusEpochSeconds < 0) return Resource.Error(Failure.UpdateAlarmTimeLessThanZeroFailure)
         val currentAlarm = getAlarmUseCase.run(GetAlarmUseCase.Params(params.skycamKey))
+
         if (currentAlarm is Resource.Success) {
 
             val now = Instant.now().epochSecond
@@ -38,7 +42,9 @@ open class UpdateAlarmTimeUseCase @Inject constructor(
 
             return repo.setAlarm(params.skycamKey, newTime, currentAlarm.value.isActive)
 
-        } else if (currentAlarm is Resource.Error) return Resource.Error(currentAlarm.failure)
+        } else if (currentAlarm is Resource.Error && currentAlarm.failure == Failure.AlarmNotFoundFailure) {
+            return repo.setAlarm(params.skycamKey, Instant.now().epochSecond + params.plusEpochSeconds, false)
+        }
         return Resource.Error(Failure.UpdateAlarmTimeUnknownFailure)
     }
 }

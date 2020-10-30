@@ -2,19 +2,22 @@ package com.solvind.skycams.app.presentation.home
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.ToggleButton
-import androidx.lifecycle.LifecycleOwner
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.solvind.skycams.app.databinding.ListItemSkycamBinding
 import com.solvind.skycams.app.domain.model.Skycam
 import com.solvind.skycams.app.presentation.IHandleAlarm
 import com.solvind.skycams.app.presentation.IProvideSkycamLiveData
+import com.solvind.skycams.app.presentation.ads.IAdsProvider
+import com.solvind.skycams.app.presentation.listener.AlarmOnClickListener
 import com.solvind.skycams.app.presentation.navigation.INavigateToSingle
 
 class SkycamAdapter(
     private val skycamLiveDataProvider: IProvideSkycamLiveData,
     private val alarmHandler: IHandleAlarm,
-    private val viewLifecycleOwner: LifecycleOwner
+    private val fragment: Fragment,
+    private val adsProvider: IAdsProvider
 ) : RecyclerView.Adapter<SkycamAdapter.SkycamViewHolder>() {
 
     private var skycamList: List<Skycam> = emptyList()
@@ -24,16 +27,12 @@ class SkycamAdapter(
         fun bind(item: Skycam)  {
 
             binding.apply {
-                lifecycleOwner = viewLifecycleOwner
+                lifecycleOwner = fragment.viewLifecycleOwner
                 listItemSkycam = item
                 skycamLiveData = skycamLiveDataProvider.getSkycamLiveData(item.skycamKey)
                 alarmLiveData = alarmHandler.getAlarmLiveData(item.skycamKey)
-                activateAlarmButton.setOnClickListener {
-                    if(it is ToggleButton) {
-                        if (it.isChecked) alarmHandler.activateAlarm(item.skycamKey)
-                        else alarmHandler.deactivateAlarm(item.skycamKey)
-                    }
-                }
+                activateAlarmButton.setOnClickListener(AlarmOnClickListener(alarmHandler, item.skycamKey))
+                watchAdButton.setOnClickListener { adsProvider.showNextRewardedAd(fragment.requireActivity(), fragment.lifecycleScope, item) }
                 root.setOnClickListener { navigateToSingleSkycam(binding.root, item) }
             }
             binding.executePendingBindings()

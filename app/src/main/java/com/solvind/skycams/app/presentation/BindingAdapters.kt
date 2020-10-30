@@ -1,13 +1,16 @@
 package com.solvind.skycams.app.presentation
 
+import android.widget.Button
 import android.widget.ImageView
 import androidx.databinding.BindingAdapter
 import coil.transform.CircleCropTransformation
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
+import com.solvind.skycams.app.domain.model.Alarm
 import com.solvind.skycams.app.presentation.home.TimeSinceChronometer
 import io.github.rosariopfernandes.firecoil.load
 import timber.log.Timber
+import java.time.Instant
 
 
 object BindingAdapters {
@@ -63,5 +66,17 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("reset_chronometer")
     fun convertTimestampToTimeSince(view: TimeSinceChronometer, epochSeconds: Long) = view.reset(epochSeconds)
+
+    @JvmStatic
+    @BindingAdapter("set_alarm_button_enabled_state")
+    fun setAlarmButtonEnabledState(view: Button, alarmAvailableUntilEpcohSeconds: Long) {
+        view.isEnabled = alarmAvailableUntilEpcohSeconds > Instant.now().epochSecond || alarmAvailableUntilEpcohSeconds == 0L
+    }
+
+    @JvmStatic
+    @BindingAdapter("set_alarm_button_text")
+    fun setAlarmButtonText(view: Button, alarm: Alarm) {
+
+    }
 
 }

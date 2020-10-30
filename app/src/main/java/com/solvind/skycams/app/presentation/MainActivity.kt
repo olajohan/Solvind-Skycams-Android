@@ -1,4 +1,4 @@
-package com.solvind.skycams.app
+package com.solvind.skycams.app.presentation
 
 import android.content.ComponentName
 import android.content.Context
@@ -10,15 +10,22 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.solvind.skycams.app.R
 import com.solvind.skycams.app.service.AlarmServiceImpl
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+
+/**
+ * Responsibilities:
+ * - Start and bind/unbind from alarm service
+ * - Setup navigation (navcontroller)
+ * - Set content
+ * */
 @ExperimentalCoroutinesApi
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     private lateinit var mService : AlarmServiceImpl
-
 
     /**
      * We are binding to the service just so we can quickly shut it down
@@ -30,24 +37,24 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             val binder = service as AlarmServiceImpl.LocalBinder
             mService = binder.getService()
         }
-
         override fun onServiceDisconnected(name: ComponentName?) {}
 
     }
 
     /**
-     * Setup nav controller
+     * Setup navigation
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
         findViewById<BottomNavigationView>(R.id.bottom_nav).setupWithNavController(navController)
-
     }
 
     /**
-     * Start alarm service
+     * Start and bind to the alarm service. We only bind to the service in order to notify it
+     * when the activity is started and stopped (bound and unbound). The service shall otherwise
+     * be decoupled from android components.
      * */
     override fun onStart() {
         super.onStart()

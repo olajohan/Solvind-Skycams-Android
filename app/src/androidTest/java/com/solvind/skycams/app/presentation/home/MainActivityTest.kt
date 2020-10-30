@@ -1,7 +1,7 @@
 package com.solvind.skycams.app.presentation.home
 
 import androidx.test.core.app.launchActivity
-import com.solvind.skycams.app.SignInActivity
+import com.solvind.skycams.app.InitActivity
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
@@ -21,7 +21,7 @@ class MainActivityTest {
 
     @Test
     fun loadingSkycamList_showLoadingIndicator() {
-        val scenario = launchActivity<SignInActivity>()
+        val scenario = launchActivity<InitActivity>()
 
     }
 }

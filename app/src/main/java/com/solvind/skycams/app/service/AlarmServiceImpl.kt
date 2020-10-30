@@ -8,22 +8,22 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.solvind.skycams.app.FOREGROUND_NOTIFICATIONS_CHANNEl_ID
-import com.solvind.skycams.app.MainActivity
 import com.solvind.skycams.app.R
 import com.solvind.skycams.app.core.UseCase
 import com.solvind.skycams.app.core.UseCaseFlow
+import com.solvind.skycams.app.domain.enums.AuroraPredictionLabel
 import com.solvind.skycams.app.domain.model.Alarm
 import com.solvind.skycams.app.domain.model.Skycam
 import com.solvind.skycams.app.domain.usecases.DeactivateAlarmUseCase
 import com.solvind.skycams.app.domain.usecases.DeactivateAllAlarmsUseCase
 import com.solvind.skycams.app.domain.usecases.GetSkycamFlowUseCase
+import com.solvind.skycams.app.presentation.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import timber.log.Timber
 import java.time.Instant
 import java.util.*
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 private const val FOREGROUND_NOTIFICATION_ID = 1
@@ -34,27 +34,23 @@ private const val CLEAR_ALL_ALARMS_REQUEST_CODE = 99
 @AndroidEntryPoint
 class AlarmServiceImpl : LifecycleService() {
 
-    @Inject
-    lateinit var getAllAlarmsFlowUseCase: com.solvind.skycams.app.domain.usecases.GetAllAlarmsFlowUseCase
-
-    @Inject
-    lateinit var getSkycamFlowUseCase: GetSkycamFlowUseCase
-
-    @Inject
-    lateinit var deactivateAlarmUseCase: DeactivateAlarmUseCase
-
-    @Inject
-    lateinit var deactivateAllAlarmsUseCase: DeactivateAllAlarmsUseCase
-
+    @Inject lateinit var mGetAllAlarmsFlowUseCase: com.solvind.skycams.app.domain.usecases.GetAllAlarmsFlowUseCase
+    @Inject lateinit var mGetSkycamFlowUseCase: GetSkycamFlowUseCase
+    @Inject lateinit var mDeactivateAlarmUseCase: DeactivateAlarmUseCase
+    @Inject lateinit var mDeactivateAllAlarmsUseCase: DeactivateAllAlarmsUseCase
     private lateinit var mUserAlarmsFlowsJob: Job
-
     private lateinit var mSkycamMergedFlowJob: Job
 
     /**
      * Synchronized list that holds all the users alarms. The user alarm listener is updating this list
-     * eveverytime there is an update in the database.
+     * eveverytime there is an update in the database. The list contains both inactive and active alarms.
      *
-     * IMPORTANT! This list must always be referenced from a synchronized(mCurrentAlarmList) {} block.
+     *  The number of alarms in this list will not by default be the same as the number of skycam entries in the
+     * database. Only the alarms the user has previously activated will be in this list.
+     *
+     * IMPORTANT!
+     * This list must always be referenced from a synchronized(mCurrentAlarmList) {} block. The synchronized
+     * block will use the list object itself as a lock.
      * */
     private val mCurrentAlarmsList = Collections.synchronizedList(mutableListOf<Alarm>())
 
@@ -107,7 +103,7 @@ class AlarmServiceImpl : LifecycleService() {
      * */
     private fun startUserAlarmsListener() {
         mUserAlarmsFlowsJob = lifecycleScope.launch {
-            getAllAlarmsFlowUseCase.run(UseCaseFlow.None())
+            mGetAllAlarmsFlowUseCase.run(UseCaseFlow.None())
                 .flowOn(Dispatchers.IO)
                 .catch { exception ->
                     Timber.i(
@@ -139,18 +135,17 @@ class AlarmServiceImpl : LifecycleService() {
         while(true) {
             synchronized(mCurrentAlarmsList) {
                 mCurrentAlarmsList.forEach {
+
+                    /**
+                     * Sets the alarm to a deactivated state if the value of available until is in the past
+                     * */
                     if (it.isActive && it.alarmAvailableUntilEpochSeconds < Instant.now().epochSecond)
-                        deactivateAlarmUseCase(this, DeactivateAlarmUseCase.Params(it.skycamKey))
+                        mDeactivateAlarmUseCase(this, DeactivateAlarmUseCase.Params(it.skycamKey))
                 }
             }
-            delay(TimeUnit.SECONDS.toMillis(1))
+            delay(1000)
         }
     }
-
-    /**
-     * Cancel the listener for alarm updates. Called when the activity unbinds from the service
-     * */
-    private fun stopUserAlarmsListener() = mUserAlarmsFlowsJob.cancel()
 
 
     /**
@@ -158,12 +153,12 @@ class AlarmServiceImpl : LifecycleService() {
      * and adjust the list accordingly.
      * */
     private fun deactivateSingleAlarm(skycamKey: String) = lifecycleScope.launch(Dispatchers.IO) {
-        deactivateAlarmUseCase(this, DeactivateAlarmUseCase.Params(skycamKey))
+        mDeactivateAlarmUseCase(this, DeactivateAlarmUseCase.Params(skycamKey))
     }
 
     private fun deactivateAllAlarms() = lifecycleScope.launch(Dispatchers.IO) {
         Timber.i("DeactivateAllAlarms")
-        deactivateAllAlarmsUseCase(this, UseCase.None()) {
+        mDeactivateAllAlarmsUseCase(this, UseCase.None()) {
             Timber.i("Result=$it")
         }
 
@@ -202,11 +197,10 @@ class AlarmServiceImpl : LifecycleService() {
          * Get a flow (cold stream) for all the users valid alarms
          * */
         val skycamFlowList = validAlarmsList.mapTo(mutableListOf()) {
-            getSkycamFlowUseCase.run(GetSkycamFlowUseCase.Params(it.skycamKey))
+            mGetSkycamFlowUseCase.run(GetSkycamFlowUseCase.Params(it.skycamKey))
         }
 
         Timber.i("Flow list size: ${skycamFlowList.size}")
-
         startSkycamUpdateListener(skycamFlowList)
         showForegroundNotification()
     }
@@ -271,7 +265,12 @@ class AlarmServiceImpl : LifecycleService() {
                 .flowOn(Dispatchers.IO)
                 .drop(skycamFlowList.size)
                 .collect {
-                    Timber.i("New update from: ${it.location.name} Image: ${it.mostRecentImage.imageId}")
+                    when(it.mostRecentImage.predictionLabel) {
+                        AuroraPredictionLabel.VISIBLE_AURORA -> {
+
+                        }
+                        AuroraPredictionLabel.NOT_AURORA -> {}
+                        AuroraPredictionLabel.NOT_PREDICTED -> {}                    }
                 }
         }
     }
