@@ -15,6 +15,10 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+/**
+ * - Loads a list of skycams to be used in the homefragments recyclerview.
+ * - Offers skycam livedata which
+ * */
 class HomeViewModel @ViewModelInject constructor(
     private val getAllSkycamsUseCase: GetAllSkycamsUseCase,
     private val getSkycamFlowUseCase: GetSkycamFlowUseCase,
@@ -23,28 +27,20 @@ class HomeViewModel @ViewModelInject constructor(
     private val deactivateAlarmUseCase: DeactivateAlarmUseCase
 ) : ViewModel(), IProvideSkycamLiveData, IHandleAlarm {
 
-    private val viewState = MutableLiveData<ViewState>()
-    val viewStateReadOnly = viewState as LiveData<ViewState>
-
-    init { refreshSkycamList() }
+    private val mainViewState = MutableLiveData<MainViewState>()
+    val mainViewStateReadOnly = mainViewState as LiveData<MainViewState>
 
     fun refreshSkycamList() {
-        viewState.value = ViewState.Loading
+        mainViewState.value = MainViewState.Loading
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             getAllSkycamsUseCase(this, UseCase.None()) { result ->
                 when(result) {
-                    is Resource.Success -> viewState.value = ViewState.Success(result.value)
-                    is Resource.Error -> viewState.value = ViewState.Failed(result.failure)
+                    is Resource.Success -> mainViewState.value = MainViewState.Success(result.value)
+                    is Resource.Error -> mainViewState.value = MainViewState.Failed(result.failure)
                 }
             }
         }
-    }
-
-    sealed class ViewState() {
-        object Loading : ViewState()
-        data class Success(val skycamList: List<Skycam>) : ViewState()
-        data class Failed(val failure: Failure) : ViewState()
     }
 
     override fun getSkycamLiveData(skycamKey: String) =
@@ -79,5 +75,9 @@ class HomeViewModel @ViewModelInject constructor(
         deactivateAlarmUseCase(this, DeactivateAlarmUseCase.Params(skycamKey))
     }
 
-
+    sealed class MainViewState() {
+        object Loading : MainViewState()
+        data class Success(val skycamList: List<Skycam>) : MainViewState()
+        data class Failed(val failure: Failure) : MainViewState()
+    }
 }

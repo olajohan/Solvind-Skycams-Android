@@ -11,5 +11,4 @@
         <item name="colorSurface">@color/lightGrey</item>
         <item name="colorOnSurface">@color/lightMediumGrey</item>
     </style>
-
 </resources>

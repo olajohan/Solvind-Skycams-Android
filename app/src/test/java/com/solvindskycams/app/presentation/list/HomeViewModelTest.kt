@@ -81,12 +81,12 @@ class HomeViewModelTest {
             deactivateAlarmUseCase
             )
 
-        val loadingResult = viewModel.viewStateReadOnly.getOrAwaitValue()
-        assertThat(loadingResult).isEqualTo(HomeViewModel.ViewState.Loading)
+        val loadingResult = viewModel.mainViewStateReadOnly.getOrAwaitValue()
+        assertThat(loadingResult).isEqualTo(HomeViewModel.MainViewState.Loading)
 
         testCoroutineDispatcher.resumeDispatcher()
-        val successResult = viewModel.viewStateReadOnly.getOrAwaitValue()
-        assertThat(successResult).isEqualTo(HomeViewModel.ViewState.Success(returningSkycamList))
+        val successResult = viewModel.mainViewStateReadOnly.getOrAwaitValue()
+        assertThat(successResult).isEqualTo(HomeViewModel.MainViewState.Success(returningSkycamList))
     }
 
     @Test
@@ -104,10 +104,10 @@ class HomeViewModelTest {
             activateAlarmUseCase,
             deactivateAlarmUseCase
         )
-        assertThat(viewModel.viewStateReadOnly.getOrAwaitValue()).isEqualTo(HomeViewModel.ViewState.Loading)
+        assertThat(viewModel.mainViewStateReadOnly.getOrAwaitValue()).isEqualTo(HomeViewModel.MainViewState.Loading)
 
         testCoroutineDispatcher.resumeDispatcher()
-        assertThat(viewModel.viewStateReadOnly.getOrAwaitValue()).isEqualTo(HomeViewModel.ViewState.Failed(
+        assertThat(viewModel.mainViewStateReadOnly.getOrAwaitValue()).isEqualTo(HomeViewModel.MainViewState.Failed(
             Failure.EmptySkycamListFailure))
     }
 

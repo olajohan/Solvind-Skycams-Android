@@ -18,6 +18,10 @@
         The Aurora Alarm. These notifications don\'t interrupt you with alarms. You must keep this notification on
         to see that the alarm service is running in the background.
     </string>
-    <string name="clear_all_alarms">STOP</string>
+    <string name="cancel_all_alarm_listeners_text">CANCEL</string>
+    <string name="connection_error_text">Please check your internet connection.</string>
+    <string name="alarm_notifications_name">Alarm Notifications</string>
+    <string name="alarm_notifications_description">"Used for alarming you about when the northern lights appears. "</string>
+    <string name="reactivate_alarm_pending_intent_text">REACTIVATE</string>
 
 </resources>

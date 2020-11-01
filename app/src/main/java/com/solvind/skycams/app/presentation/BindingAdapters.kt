@@ -3,6 +3,8 @@ package com.solvind.skycams.app.presentation
 import android.widget.Button
 import android.widget.ImageView
 import androidx.databinding.BindingAdapter
+import coil.clear
+import coil.request.CachePolicy
 import coil.transform.CircleCropTransformation
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
@@ -22,12 +24,21 @@ object BindingAdapters {
     @BindingAdapter("load_skycam_image")
     fun loadSkycamImage(view: ImageView, storageLocation: String?) {
 
+        /**
+         * Clear any pending requests on the image view. This is to prevent the recyclerview from
+         * accidentaly loading the wrong image into a recycled view.
+         * */
+        view.clear()
+
         if (storageLocation != null) {
             when {
                 storageLocation.startsWith("gs://skycam-images") -> {
                     val storageRef = skycamImagesStorage.getReferenceFromUrl(storageLocation)
                     view.load(storageRef) {
                         crossfade(true)
+                        memoryCachePolicy(CachePolicy.DISABLED)
+                        diskCachePolicy(CachePolicy.DISABLED)
+                        networkCachePolicy(CachePolicy.DISABLED)
                     }
                 }
                 else -> Timber.i("Unknown storage location for image $storageLocation")
@@ -38,6 +49,13 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("load_main_image")
     fun loadMainImage(view: ImageView, storageLocation: String?) {
+
+        /**
+         * Clear any pending requests on the image view. This is to prevent the recyclerview from
+         * accidentaly loading the wrong image into a recycled view.
+         * */
+        view.clear()
+
         if (storageLocation != null) {
             when {
                 storageLocation.startsWith("gs://aurora-alarm.appspot.com") -> {
@@ -51,6 +69,13 @@ object BindingAdapters {
     @JvmStatic
     @BindingAdapter("load_main_image_thumb")
     fun loadMainImageThumb(view: ImageView, storageLocation: String?) {
+
+        /**
+         * Clear any pending requests on the image view. This is to prevent the recyclerview from
+         * accidentaly loading the wrong image into a recycled view.
+         * */
+        view.clear()
+
         if (storageLocation != null) {
             when {
                 storageLocation.startsWith("gs://aurora-alarm.appspot.com") -> {

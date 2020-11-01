@@ -43,10 +43,10 @@
 
                         <ImageView
                             android:id="@+id/icon_imageView"
+                            load_main_image_thumb="@{listItemSkycam.mainImage}"
                             android:layout_width="52dp"
                             android:layout_height="wrap_content"
                             android:adjustViewBounds="true"
-                            load_main_image_thumb="@{listItemSkycam.mainImage}"
                             tools:srcCompat="@drawable/skaidi_main" />
 
                     </LinearLayout>
