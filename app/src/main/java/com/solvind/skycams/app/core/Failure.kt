@@ -15,6 +15,12 @@ sealed class Failure {
     object FailedToGetAllAlarmsFailure : Failure()
     object DeactivateAllAlarmsUnknownFailure : Failure()
     object OneOrMoreAlarmsFailedToDeactivateFailure : Failure()
+    object FailedToLoadAd : Failure()
+    object ConsentFormLoadingError : Failure()
+    object ShowConsentFormError : Failure()
+    object NoAdNetworksInitialized : Failure()
+    object AlarmTimedOutFailure : Failure()
+    object UnknownActivateAlarmError : Failure()
 }
 
 // Thrown inside flows if the userid is null

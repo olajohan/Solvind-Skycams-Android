@@ -25,6 +25,7 @@
         android:id="@+id/homeFragment"
         android:name="com.solvind.skycams.app.presentation.home.HomeFragment"
         android:label="Solvind Skycams"/>
+
     <fragment
         android:id="@+id/singleSkycamFragment"
         android:name="com.solvind.skycams.app.presentation.single.SingleSkycamFragment"

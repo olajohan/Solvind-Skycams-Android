@@ -5,16 +5,15 @@ buildscript {
         versionCode = 1
         versionName = "1.0"
         buildToolsVersion = "30.0.2"
+        kotlin_version = "1.4.10"
 
-        minSdk = 29
+        minSdk = 27
         compileSdk = 30
-        targetSdk = 30
+        targetSdk = 29
 
         srcCom = JavaVersion.VERSION_1_8
         tarCom = JavaVersion.VERSION_1_8
         jvmTarget = "1.8"
-
-        gradleVersion = '4.1.0'
 
     }
 
@@ -24,10 +23,10 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.android.tools.build:gradle:${gradleVersion}"
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.10"
-        classpath "com.google.dagger:hilt-android-gradle-plugin:2.29.1-alpha"
-        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.3.1"
+        classpath  'com.android.tools.build:gradle:4.1.0'
+        classpath  "org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.10"
+        classpath  "com.google.dagger:hilt-android-gradle-plugin:2.29.1-alpha"
+        classpath  "androidx.navigation:navigation-safe-args-gradle-plugin:2.3.1"
         classpath "com.google.gms:google-services:4.3.4"
     }
 }

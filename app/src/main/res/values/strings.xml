@@ -3,6 +3,7 @@
     <string name="title_skycam">Skycams</string>
     <string name="title_login">Login</string>
     <string name="title_map">Map</string>
+    <string name="map_id">7fb94e92c089977d</string>
 
     <!-- Facebook application ID and custom URL scheme (app ID prefixed by 'fb'). -->
     <string name="facebook_application_id" translatable="false">1207350812997287</string>

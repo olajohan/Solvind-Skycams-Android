@@ -1,6 +1,9 @@
 package com.solvind.skycams.app.core
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 
 /**
  * Abstract class for a Use Case (Interactor in terms of Clean Architecture).
@@ -10,13 +13,20 @@ import kotlinx.coroutines.*
  * By convention each [UseCase] implementation will execute its job in a background thread
  * (kotlin coroutine) and will post the result in the UI thread.
  */
-abstract class UseCase<Type, in Params>(private val dispatcher: CoroutineDispatcher) where Type : Any {
+abstract class UseCase<Type, in Params>(
+    private val ioDispatcher: CoroutineDispatcher,
+    private val mainDispatcher: CoroutineDispatcher
+) where Type : Any {
 
     abstract suspend fun run(params: Params): Resource<Type>
 
-    operator fun invoke(scope: CoroutineScope, params: Params, onResult: (Resource<Type>) -> Unit = {}) {
-        val job = scope.async(dispatcher) { run(params) }
-        scope.launch(Dispatchers.Main) { onResult(job.await()) }
+    operator fun invoke(
+        scope: CoroutineScope,
+        params: Params,
+        onResult: (Resource<Type>) -> Unit = {}
+    ) {
+        val job = scope.async(ioDispatcher) { run(params) }
+        scope.launch(mainDispatcher) { onResult(job.await()) }
     }
 
     class None

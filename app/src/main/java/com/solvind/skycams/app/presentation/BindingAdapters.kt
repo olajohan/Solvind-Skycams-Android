@@ -8,7 +8,7 @@ import coil.request.CachePolicy
 import coil.transform.CircleCropTransformation
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
-import com.solvind.skycams.app.domain.model.Alarm
+import com.solvind.skycams.app.domain.model.AlarmConfig
 import com.solvind.skycams.app.presentation.home.TimeSinceChronometer
 import io.github.rosariopfernandes.firecoil.load
 import timber.log.Timber
@@ -100,7 +100,7 @@ object BindingAdapters {
 
     @JvmStatic
     @BindingAdapter("set_alarm_button_text")
-    fun setAlarmButtonText(view: Button, alarm: Alarm) {
+    fun setAlarmButtonText(view: Button, alarmConfig: AlarmConfig) {
 
     }
 

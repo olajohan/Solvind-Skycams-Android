@@ -1,9 +1,9 @@
 package com.solvind.skycams.app.data.di
 
-import com.solvind.skycams.app.data.repo.FirestoreAlarmRepoImpl
+import com.solvind.skycams.app.data.repo.FirestoreAlarmConfigRepoImpl
 import com.solvind.skycams.app.data.repo.FirestoreImageInfoRepoImpl
 import com.solvind.skycams.app.data.repo.FirestoreSkycamRepoImpl
-import com.solvind.skycams.app.domain.repo.IAlarmRepo
+import com.solvind.skycams.app.domain.repo.IAlarmConfigRepo
 import com.solvind.skycams.app.domain.repo.IImageInfoRepo
 import com.solvind.skycams.app.domain.repo.ISkycamRepo
 import dagger.Binds
@@ -28,6 +28,6 @@ abstract class DataModule {
 
     @Singleton
     @Binds
-    abstract fun bindsFirestoreAlarmRepo(firestoreAlarmRepoImpl: FirestoreAlarmRepoImpl) : IAlarmRepo
+    abstract fun bindsFirestoreAlarmRepo(firestoreAlarmRepoImpl: FirestoreAlarmConfigRepoImpl) : IAlarmConfigRepo
 
 }

@@ -1,10 +1,16 @@
 package com.solvind.skycams.app.service
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Binder
 import android.os.IBinder
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -14,15 +20,11 @@ import androidx.lifecycle.lifecycleScope
 import coil.request.ErrorResult
 import coil.request.SuccessResult
 import com.google.firebase.storage.FirebaseStorage
-import com.solvind.skycams.app.ALARM_NOTIFICATIONS_CHANNEL_ID
-import com.solvind.skycams.app.FOREGROUND_NOTIFICATIONS_CHANNEl_ID
 import com.solvind.skycams.app.R
-import com.solvind.skycams.app.core.UseCase
-import com.solvind.skycams.app.core.UseCaseFlow
+import com.solvind.skycams.app.core.*
 import com.solvind.skycams.app.di.AuroraAlarmAppspot
 import com.solvind.skycams.app.di.SkycamImages
-import com.solvind.skycams.app.domain.enums.AuroraPredictionLabel
-import com.solvind.skycams.app.domain.model.Alarm
+import com.solvind.skycams.app.domain.model.AlarmConfig
 import com.solvind.skycams.app.domain.model.Skycam
 import com.solvind.skycams.app.domain.usecases.*
 import com.solvind.skycams.app.presentation.MainActivity
@@ -32,52 +34,53 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import timber.log.Timber
 import java.time.Instant
-import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-
-private const val FOREGROUND_NOTIFICATION_ID = 1
-private const val SERVICE_CANCEL_ALL_ALARM_LISTENERS_EXTRA_KEY = "clear_all_alarms"
-private const val SERVICE_REACTIVATE_ALARM_EXTRA_KEY = "reactivate_alarm"
-private const val SERVICE_CLEAR_ALL_ALARMS_REQUEST_CODE = 1
-private const val SERVICE_REACTIVATE_ALARM_REQUEST_CODE = 2
-private const val ACTIVITY_NO_EXTRAS_REQUEST_CODE = 3
-private const val ACTIVITY_WITH_EXTRAS_KEY_STORAGE_LOCATION_REQUEST_CODE = 4
-
-/**
- * Will also be used by the activity to retrieve the intent extras
- * */
-const val ACTIVITY_INTENT_EXTRAS_STORAGE_LOCATION_KEY = "storage_location"
-const val ACTIVITY_INTENT_EXTRAS_SKYCAMKEY_KEY = "skycamKey"
 
 @ExperimentalCoroutinesApi
 @AndroidEntryPoint
 class AlarmServiceImpl : LifecycleService() {
 
-    @Inject lateinit var mGetAllAlarmsFlowUseCase: com.solvind.skycams.app.domain.usecases.GetAllAlarmsFlowUseCase
-    @Inject lateinit var mGetSkycamFlowUseCase: GetSkycamFlowUseCase
-    @Inject lateinit var mActivateAlarmUseCase: ActivateAlarmUseCase
-    @Inject lateinit var mDeactivateAlarmUseCase: DeactivateAlarmUseCase
-    @Inject lateinit var mDeactivateAllAlarmsUseCase: DeactivateAllAlarmsUseCase
-    @Inject lateinit var mGetSkycamUseCase: GetSkycamUseCase
-    @Inject @SkycamImages lateinit var mSkycamImageStorage: FirebaseStorage
-    @Inject @AuroraAlarmAppspot lateinit var mAppStorage: FirebaseStorage
+    @Inject
+    lateinit var mGetAllAlarmsFlowUseCase: GetAllAlarmsFlowUseCase
 
-    private lateinit var mUserAlarmsFlowsJob: Job
-    private lateinit var mSkycamMergedFlowJob: Job
+    @Inject
+    lateinit var mGetSkycamFlowUseCase: GetSkycamFlowUseCase
+
+    @Inject
+    lateinit var mActivateAlarmUseCase: ActivateAlarmConfigUseCase
+
+    @Inject
+    lateinit var mDeactivateAlarmUseCase: DeactivateAlarmConfigUseCase
+
+    @Inject
+    lateinit var mDeactivateAllAlarmsUseCase: DeactivateAllAlarmsUseCase
+
+    @Inject
+    lateinit var mGetSkycamUseCase: GetSkycamUseCase
+
+    @Inject
+    @SkycamImages
+    lateinit var mSkycamImageStorage: FirebaseStorage
+
+    @Inject
+    @AuroraAlarmAppspot
+    lateinit var mAppStorage: FirebaseStorage
 
     /**
-     * Synchronized list that holds all the users alarms. The user alarm listener is updating this list
-     * eveverytime there is an update in the database. The list contains both inactive and active alarms.
+     * The list contains both inactive and active alarms.
      *
      *  The number of alarms in this list will not by default be the same as the number of skycam entries in the
      * database. Only the alarms the user has previously activated will be in this list.
      *
-     * IMPORTANT!
-     * This list must always be referenced from a synchronized(mCurrentAlarmList) {} block. The synchronized
-     * block will use the list object itself as a lock.
+     * Stateflows are thread safe by default
      * */
-    private val mCurrentAlarmsList = Collections.synchronizedList(mutableListOf<Alarm>())
+    companion object {
+        private val mAlarms = MutableStateFlow(mutableListOf<AlarmConfig>())
+        val alarms = mAlarms.asStateFlow()
+    }
+
+    private lateinit var mSkycamFlowsJob: Job
 
     /**
      * Interface for communicating with bound components. This service will not make use of the binding
@@ -86,7 +89,7 @@ class AlarmServiceImpl : LifecycleService() {
     private val binder = LocalBinder()
 
     /**
-     * Starts the handler responsible for checking the alarmlist every second and deactivating the
+     * Starts the handler responsiblev for checking the alarmlist every second and deactiating the
      * users alarm if the alarm's availableUntilEpochSeconds in the past.
      *
      * Also starts the user alarm listener responsible for updating the alarm list whenever an
@@ -94,8 +97,38 @@ class AlarmServiceImpl : LifecycleService() {
      * */
     override fun onCreate() {
         super.onCreate()
+        createAlarmNotificationChannel()
+        createForegroundNotificationChannel()
         startUserAlarmsListener()
-        startAlarmValidatorHandler()
+        startAlarmValidator()
+        resetSkycamCollectingJob()
+    }
+
+    private fun resetSkycamCollectingJob() {
+        if (this::mSkycamFlowsJob.isInitialized) {
+            mSkycamFlowsJob.cancel()
+        }
+
+        mSkycamFlowsJob = lifecycleScope.launchWhenCreated {
+            mAlarms.transform<List<AlarmConfig>, AlarmConfig> {
+                val validAlarms = mAlarms.value.filter { it.isActiveAndNotTimeout() }
+                if (validAlarms.isNotEmpty()) {
+                    showForegroundNotification(validAlarms)
+                } else {
+                    stopForeground(true)
+                }
+                validAlarms.forEach {
+                    emit(it)
+                }
+
+            }.flatMapMerge {
+                    mGetSkycamFlowUseCase.run(GetSkycamFlowUseCase.Params(it.skycamKey))
+            }.drop(
+                mAlarms.value.count { it.isActiveAndNotTimeout() }
+            ).collect {
+                Timber.i("New update from ${it.location.name} Time: ${it.mostRecentImage.timestamp}")
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -106,9 +139,31 @@ class AlarmServiceImpl : LifecycleService() {
          * so we don't bother with any further checks than that the key exists in the Intent extras
          * before deactivating all alarms
          */
-        intent?.extras?.get(SERVICE_CANCEL_ALL_ALARM_LISTENERS_EXTRA_KEY).let {
-            if (it is Boolean && it) deactivateAllAlarms()
+        when (intent?.action) {
+            SERVICE_CANCEL_ALL_ALARM_INTENT_ACTION -> deactivateAllAlarms()
+
+            SERVICE_REACTIVATE_ALARM_INTENT_ACTION -> intent.extras?.getString(
+                INTENT_EXTRA_SKYCAMKEY
+            )?.let { skycamKey ->
+                lifecycleScope.launch {
+                    mActivateAlarmUseCase(this, ActivateAlarmConfigUseCase.Params(skycamKey)) {
+                        when (it) {
+                            is Resource.Success -> Toast.makeText(
+                                this@AlarmServiceImpl,
+                                "Alarm reactivated",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            is Resource.Error -> Toast.makeText(
+                                this@AlarmServiceImpl,
+                                "Error while trying to reactivate",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                }
+            }
         }
+
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -118,21 +173,31 @@ class AlarmServiceImpl : LifecycleService() {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-
-        synchronized(mCurrentAlarmsList) {
-            /* If there are no active alarms when all components has unbound, stop the service */
-            if (mCurrentAlarmsList.none { it.isActive }) stopSelf()
-        }
+        if (mAlarms.value.none { it.isActive }) stopSelf()
         return true
     }
 
     /**
+     * Deactivates alarms that has timed out
+     * */
+    private fun startAlarmValidator() = lifecycleScope.launch {
+        while (true) {
+            mAlarms.value.forEach {
+                if (it.hasTimedoutAndIsStillActive()) {
+                    deactivateSingleAlarm(it.skycamKey)
+                }
+            }
+            delay(1000L)
+        }
+    }
+
+    /**
      * Starts/restarts listening for updates (inserts, modifications and deletions) on the users alarms.
-     * The listener is attached/canceled in the services started/destroyed
+     * The listener is attached/canceled in the service's started/destroyed
      *
      * */
     private fun startUserAlarmsListener() {
-        mUserAlarmsFlowsJob = lifecycleScope.launch {
+        lifecycleScope.launch {
             mGetAllAlarmsFlowUseCase.run(UseCaseFlow.None())
                 .flowOn(Dispatchers.IO)
                 .catch { exception ->
@@ -143,47 +208,19 @@ class AlarmServiceImpl : LifecycleService() {
                      """.trimIndent()
                     )
                 }
-                .onEmpty {
-                    synchronized(mCurrentAlarmsList) { mCurrentAlarmsList.clear() }
-                    handleAlarmListsUpdate()
-                }
                 .collect {
-                    synchronized(mCurrentAlarmsList) {
-                        mCurrentAlarmsList.clear()
-                        mCurrentAlarmsList.addAll(it)
-                    }
-                    handleAlarmListsUpdate()
+                    mAlarms.value = it.toMutableList()
+                    resetSkycamCollectingJob()
                 }
         }
     }
-
-    /**
-     * Checks the alarm list every second and calls deactivateAlarmUseCase if the alarm is active
-     * and has alarmAvailableUntilEpochSeconds in the past.
-     * */
-    private fun startAlarmValidatorHandler() = lifecycleScope.launch(Dispatchers.Default) {
-        while (true) {
-            synchronized(mCurrentAlarmsList) {
-                mCurrentAlarmsList.forEach {
-
-                    /**
-                     * Sets the alarm to a deactivated state if the value of available until is in the past
-                     * */
-                    if (it.isActive && it.alarmAvailableUntilEpochSeconds < Instant.now().epochSecond)
-                        mDeactivateAlarmUseCase(this, DeactivateAlarmUseCase.Params(it.skycamKey))
-                }
-            }
-            delay(1000)
-        }
-    }
-
 
     /**
      * Sets a single alarms isActive to false in the database. This will fire of the user alarm listener
      * and adjust the list accordingly.
      * */
     private fun deactivateSingleAlarm(skycamKey: String) = lifecycleScope.launch(Dispatchers.IO) {
-        mDeactivateAlarmUseCase(this, DeactivateAlarmUseCase.Params(skycamKey))
+        mDeactivateAlarmUseCase(this, DeactivateAlarmConfigUseCase.Params(skycamKey))
     }
 
     private fun deactivateAllAlarms() = lifecycleScope.launch(Dispatchers.IO) {
@@ -194,60 +231,11 @@ class AlarmServiceImpl : LifecycleService() {
 
     }
 
-    /** Called everytime the user makes an updates to h*'s alarms. We reset the alarm listening job
-     * on each call. If the user's alarm list is empty we return before calling startSkycamUpdateListener.
-     * */
-    private fun handleAlarmListsUpdate() {
-
-        /**
-         * Whenever the alarm list changes we always cancels the current skycam listener job.
-         * It will be reinitialized in the call to startSkycamUpdateListener if the alarm list is
-         * not empty.
-         *
-         * */
-        cancelSkycamUpdateListenerJob()
-
-        val validAlarmsList = mutableListOf<Alarm>()
-        synchronized(mCurrentAlarmsList) {
-
-            validAlarmsList.addAll(
-                mCurrentAlarmsList.filter { it.isActive && it.alarmAvailableUntilEpochSeconds > Instant.now().epochSecond }
-            )
-        }
-
-        /**
-         * If the user don't have any valid alarms, then remove the foreground notification and return
-         * The alarms are deactivated by the alarmValidatorHandler who periodically checks for alarms
-         * that has timed out.
-         * */
-        if (validAlarmsList.isEmpty()) {
-            stopForeground(true)
-            return
-        }
-
-        /**
-         * Get a flow for all the users valid alarms
-         * */
-        val skycamFlowList = validAlarmsList.mapTo(mutableListOf()) {
-            mGetSkycamFlowUseCase.run(GetSkycamFlowUseCase.Params(it.skycamKey))
-        }
-
-        Timber.i("Flow list size: ${skycamFlowList.size}")
-        startSkycamUpdateListener(skycamFlowList)
-
-
-
-        showForegroundNotification(validAlarmsList)
-
-
-
-    }
-
     /**
      * Updates or removes the foreground notification depending on if the provided filtered list
      * is empty or contains active alarms.
      * */
-    private fun showForegroundNotification(validAlarmsList: List<Alarm>) {
+    private fun showForegroundNotification(validAlarmsList: List<AlarmConfig>) {
 
         val openActivityPendingIntent = getForegroundNotificationContentPendingIntent()
         val clearAllAlarmsPendingIntent = getClearAllAlarmsPendingIntent()
@@ -263,7 +251,6 @@ class AlarmServiceImpl : LifecycleService() {
 
         val now = Instant.now().epochSecond
         val timeout = (longestAvailableAlarm.alarmAvailableUntilEpochSeconds - now) + now
-        Timber.i("Timeout: $timeout")
 
         val notification = NotificationCompat.Builder(this, FOREGROUND_NOTIFICATIONS_CHANNEl_ID)
             .setContentTitle("Aurora Alarm")
@@ -292,21 +279,21 @@ class AlarmServiceImpl : LifecycleService() {
         }
         return PendingIntent.getActivity(
             this,
-            ACTIVITY_NO_EXTRAS_REQUEST_CODE,
+            ACTIVITY_OPEN_DESTINATION_HOME,
             intent,
-            PendingIntent.FLAG_ONE_SHOT
+            PendingIntent.FLAG_UPDATE_CURRENT
         )
     }
 
     private fun getClearAllAlarmsPendingIntent(): PendingIntent? {
         val intent = Intent(this, AlarmServiceImpl::class.java).apply {
-            putExtra(SERVICE_CANCEL_ALL_ALARM_LISTENERS_EXTRA_KEY, true)
+            action = SERVICE_CANCEL_ALL_ALARM_INTENT_ACTION
         }
         return PendingIntent.getService(
             this,
-            SERVICE_CLEAR_ALL_ALARMS_REQUEST_CODE,
+            SERVICE_CANCEL_ALL_ALARMS_REQUEST_CODE,
             intent,
-            PendingIntent.FLAG_NO_CREATE
+            PendingIntent.FLAG_UPDATE_CURRENT
         )
     }
 
@@ -370,7 +357,8 @@ class AlarmServiceImpl : LifecycleService() {
         /**
          * Try to download the image that set of the alarm
          */
-        val skycamImageStorageRef = mSkycamImageStorage.getReferenceFromUrl(skycam.mostRecentImage.storageLocation)
+        val skycamImageStorageRef =
+            mSkycamImageStorage.getReferenceFromUrl(skycam.mostRecentImage.storageLocation)
         val skycamImageLoadingResult = FireCoil.get(this@AlarmServiceImpl, skycamImageStorageRef)
 
         when (skycamImageLoadingResult) {
@@ -384,7 +372,10 @@ class AlarmServiceImpl : LifecycleService() {
             notify(skycam.skycamKey.hashCode(), notificationBuilder.build())
         }
 
-        Timber.i("Sound: $soundUri")
+        /**
+         * Deactivate the alarm for the skycam, so the user will not keep being disturbed
+         * */
+        deactivateSingleAlarm(skycam.skycamKey)
     }
 
     private fun getAlarmNotificationContentPendingIntent(
@@ -393,7 +384,7 @@ class AlarmServiceImpl : LifecycleService() {
     ): PendingIntent? {
         val intent = Intent(this, MainActivity::class.java).apply {
             putExtra(ACTIVITY_INTENT_EXTRAS_STORAGE_LOCATION_KEY, storageLocation)
-            putExtra(ACTIVITY_INTENT_EXTRAS_SKYCAMKEY_KEY, skycamKey)
+            putExtra(INTENT_EXTRA_SKYCAMKEY, skycamKey)
         }
         return PendingIntent.getActivity(
             this,
@@ -405,7 +396,8 @@ class AlarmServiceImpl : LifecycleService() {
 
     private fun getReactivateAlarmPendingIntent(skycamKey: String): PendingIntent? {
         val intent = Intent(this, AlarmServiceImpl::class.java).apply {
-            putExtra(SERVICE_REACTIVATE_ALARM_EXTRA_KEY, skycamKey)
+            action = SERVICE_REACTIVATE_ALARM_INTENT_ACTION
+            putExtra(INTENT_EXTRA_SKYCAMKEY, skycamKey)
         }
         return PendingIntent.getService(
             this,
@@ -416,35 +408,50 @@ class AlarmServiceImpl : LifecycleService() {
     }
 
     /**
-     * Takes a list of Flow<Skycam> and merges it into a single flow which we will use to act upon
-     * updates from the skycams. We drop the same number of updates as the size of the skycamFlowList
-     * to avoid receiving the first updates. The first updates are just the current value in db
-     * and does not reflect a realtime update from the skycam.
+     * Creates the notification channel used by the foreground service that listens to skycam updates.
+     * We will use a different channel for alerting the user about northern lights.
      *
-     * We are cancelling and restarting the mSkycamFlowsJob everytime there is a change to the
-     * users alarm settings
+     * This channel should not be used to disturb the user and thereby have the priority set to LOW
      * */
-    private fun startSkycamUpdateListener(skycamFlowList: List<Flow<Skycam>>) {
-        mSkycamMergedFlowJob = lifecycleScope.launch {
-            skycamFlowList
-                .merge()
-                .flowOn(Dispatchers.IO)
-                .drop(skycamFlowList.size)
-                .collect {
-                    when (it.mostRecentImage.predictionLabel) {
-                        AuroraPredictionLabel.VISIBLE_AURORA -> showAlarmNotification(it)
-                        AuroraPredictionLabel.NOT_AURORA -> {
-                        }
-                        AuroraPredictionLabel.NOT_PREDICTED -> {
-                        }
-                    }
-                    Timber.i("New update from ${it.location.name}. Prediction: ${it.mostRecentImage.predictionLabel}")
-                }
-        }
+    private fun createForegroundNotificationChannel() {
+        val name = getString(R.string.foreground_notification_channel_name)
+        val descriptionText = getString(R.string.foreground_notification_channel_description)
+        val importance = NotificationManager.IMPORTANCE_LOW
+        val channel = NotificationChannel(
+            FOREGROUND_NOTIFICATIONS_CHANNEl_ID,
+            name,
+            importance
+        ).apply { description = descriptionText }
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 
-    private fun cancelSkycamUpdateListenerJob() {
-        if (this::mSkycamMergedFlowJob.isInitialized) mSkycamMergedFlowJob.cancel()
+    /**
+     * Creates the notification channel used to alarm the user when northern lights appears.
+     *
+     * This channel should get the users attention asap.
+     * */
+    private fun createAlarmNotificationChannel() {
+        val name = getString(R.string.alarm_notifications_name)
+        val descriptionText = getString(R.string.alarm_notifications_description)
+        val importance = NotificationManager.IMPORTANCE_HIGH
+        val channel = NotificationChannel(ALARM_NOTIFICATIONS_CHANNEL_ID, name, importance).apply {
+            description = descriptionText
+            setSound(
+                Uri.parse("android.resource://${packageName}/${R.raw.number_2}"),
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+            )
+            enableVibration(true)
+            enableLights(true)
+            lightColor = Color.GREEN
+        }
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 
     inner class LocalBinder : Binder() {

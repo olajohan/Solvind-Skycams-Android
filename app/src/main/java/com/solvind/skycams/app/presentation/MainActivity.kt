@@ -4,18 +4,15 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.net.ConnectivityManager
 import android.os.Bundle
 import android.os.IBinder
 import android.view.View
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
 import com.solvind.skycams.app.R
-import com.solvind.skycams.app.core.InternetConnection
 import com.solvind.skycams.app.service.AlarmServiceImpl
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_main.*
@@ -31,10 +28,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
-    private lateinit var mService: AlarmServiceImpl
-    private lateinit var mConnectivityManager: ConnectivityManager
     private lateinit var mConnectionErrorSnackbar: Snackbar
-    private val mMainViewModel: MainViewModel by viewModels()
+    private lateinit var mService: AlarmServiceImpl
 
     /**
      * We are binding to the service just so we can quickly shut it down
@@ -50,6 +45,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         override fun onServiceDisconnected(name: ComponentName?) {}
     }
 
+
     /**
      * - Setup navigation
      * - Initialize the connectivity manager
@@ -57,19 +53,27 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mConnectivityManager = getSystemService(ConnectivityManager::class.java)
-        val navHostFragment =
-            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
         bottom_nav.setupWithNavController(navController)
         mConnectionErrorSnackbar = createConnectionErrorSnackBar()
+    }
 
-        mMainViewModel.internetConnectionType.observe(this, { inetCon ->
-            when (inetCon) {
-                InternetConnection.NotConnected -> mConnectionErrorSnackbar.show()
-                else -> mConnectionErrorSnackbar.dismiss()
+    private fun createConnectionErrorSnackBar() = Snackbar.make(
+        main_coordinatorLayout,
+        getString(R.string.connection_error_text),
+        Snackbar.LENGTH_INDEFINITE
+    ).apply {
+        anchorView = bottom_nav
+
+        /**
+         * Makes the snackbar sticky, so it won't be possible to swipe it away.
+         * */
+        behavior = object : BaseTransientBottomBar.Behavior() {
+            override fun canSwipeDismissView(child: View): Boolean {
+                return false
             }
-        })
+        }
     }
 
     /**
@@ -91,22 +95,5 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     override fun onStop() {
         super.onStop()
         unbindService(serviceConnection)
-    }
-
-    private fun createConnectionErrorSnackBar() = Snackbar.make(
-        main_coordinatorLayout,
-        getString(R.string.connection_error_text),
-        Snackbar.LENGTH_INDEFINITE
-    ).apply {
-        anchorView = bottom_nav
-
-        /**
-         * Makes the snackbar sticky, so it won't be possible to swipe it away.
-         * */
-        behavior = object : BaseTransientBottomBar.Behavior() {
-            override fun canSwipeDismissView(child: View): Boolean {
-                return false
-            }
-        }
     }
 }

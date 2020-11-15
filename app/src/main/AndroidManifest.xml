@@ -45,6 +45,10 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-8129908873162978~2449591875"/>
 
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/maps_api_key" />
+
     </application>
 
 </manifest>

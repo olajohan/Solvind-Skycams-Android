@@ -5,17 +5,28 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.firebase.ui.auth.AuthMethodPickerLayout
 import com.firebase.ui.auth.AuthUI
 import com.google.android.gms.ads.MobileAds
-import com.google.android.ump.ConsentForm
+import com.google.android.gms.ads.initialization.AdapterStatus
 import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
 import com.google.firebase.auth.FirebaseAuth
+import com.solvind.skycams.app.core.Failure
+import com.solvind.skycams.app.core.Resource
+import com.solvind.skycams.app.di.MainDispatcher
 import com.solvind.skycams.app.presentation.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 
 /**
@@ -35,19 +46,18 @@ import timber.log.Timber
 class InitActivity : AppCompatActivity() {
 
     private val RC_SIGN_IN = 0
-    private val mAuth = FirebaseAuth.getInstance()
 
-    private lateinit var mConsentForm: ConsentForm
-    private lateinit var mConsentInformation: ConsentInformation
+    @Inject
+    lateinit var mAuth: FirebaseAuth
+
+    @Inject @MainDispatcher lateinit var mDispatcher: CoroutineDispatcher
+
+    @Inject
+    lateinit var mConsentInformation: ConsentInformation
 
     private val mAuthStateListener = FirebaseAuth.AuthStateListener {
         if (it.currentUser == null) launchSignInFirebaseActivityForResult()
-        else {
-            /**
-             * We can say for sure that the user is logged in from here on out.
-             * */
-            requestConsentInfoUpdateThenLoadConsentForm()
-        }
+        else initializeAndLaunchMainActivity()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,49 +102,82 @@ class InitActivity : AppCompatActivity() {
         )
     }
 
-    private fun requestConsentInfoUpdateThenLoadConsentForm() {
-        val consentRequestParams = ConsentRequestParameters.Builder().build()
+    private fun initializeAndLaunchMainActivity() = lifecycleScope.launch(mDispatcher) {
 
-        mConsentInformation = UserMessagingPlatform.getConsentInformation(this)
-        mConsentInformation.requestConsentInfoUpdate(this, consentRequestParams, {
+        when (requestIsConsentFormStatus()) {
+            is Resource.Success -> Timber.i("Consent form loaded")
+            is Resource.Error -> {
+                setErrorState("Failed to load consent form. Please check your internet connection")
+                cancel()
+            }
+        }
 
-            if (mConsentInformation.isConsentFormAvailable) loadConsentFormThenInitializeAds()
+        ensureActive()
 
-        }, {
-            setErrorState("Network error, check your internet connection")
-        })
-    }
-
-    private fun loadConsentFormThenInitializeAds() {
-        UserMessagingPlatform.loadConsentForm(this, { consentForm ->
-            this.mConsentForm = consentForm
-            when (mConsentInformation.consentStatus) {
-                ConsentInformation.ConsentStatus.OBTAINED -> {
-                    Timber.i("User consent was obtained")
-                    initializeAdsThenLaunchMainActivity()
-                }
-                /**
-                 * Keep showing the form until the user has consent. We don't allow to launch
-                 * MainActivity without having the users consent.
-                 * */
-                else -> {
-                    mConsentForm.show(this) {
-                        loadConsentFormThenInitializeAds()
-                    }
+        while (mConsentInformation.consentStatus != ConsentInformation.ConsentStatus.OBTAINED) {
+            when (showConsentForm()) {
+                is Resource.Success -> Timber.i("Clicked consent / dismissed form")
+                is Resource.Error -> {
+                    setErrorState("Failed to show consent form. Please check your internet connection")
+                    cancel()
                 }
             }
+        }
+        Timber.i("User consent obtained")
+
+        ensureActive()
+
+        when (initializeAds()) {
+            is Resource.Success -> Timber.i("Ads initialized")
+            is Resource.Error -> {
+                setErrorState("Failed to initialize ads. Please check your internet connection")
+            }
+        }
+
+        ensureActive()
+
+        /**
+         * Initialization is done. Launch main activity
+         * */
+        launchMainActivity()
+    }
+
+    private suspend fun requestIsConsentFormStatus() =
+        suspendCoroutine<Resource<Unit>> { continuation ->
+            val consentRequestParams = ConsentRequestParameters.Builder().build()
+            mConsentInformation.requestConsentInfoUpdate(this, consentRequestParams, {
+
+                if (mConsentInformation.isConsentFormAvailable)
+                    continuation.resume(Resource.Success(Unit))
+                else continuation.resume(Resource.Error(Failure.ConsentFormLoadingError))
+            }, {
+                continuation.resume(Resource.Error(Failure.ConsentFormLoadingError))
+            })
+        }
+
+    private suspend fun showConsentForm() = suspendCoroutine<Resource<Unit>> { continuation ->
+        UserMessagingPlatform.loadConsentForm(this, {
+            it.show(this) { formError ->
+                Timber.i("Form error?: ${formError?.message}")
+
+                if (formError != null) continuation.resume(Resource.Error(Failure.ShowConsentFormError))
+                else continuation.resume(Resource.Success(Unit))
+            }
         }, {
-            setErrorState("Network error, check your internet connection")
+            continuation.resume(Resource.Error(Failure.ShowConsentFormError))
         })
     }
 
-    private fun initializeAdsThenLaunchMainActivity() {
-        MobileAds.initialize(applicationContext) {
-            launchMainActivityThenFinish()
+    private suspend fun initializeAds() = suspendCoroutine<Resource<Unit>> { continuation ->
+        MobileAds.initialize(applicationContext) { initializationStatus ->
+            val numNetworksReady =
+                initializationStatus.adapterStatusMap.filter { it.value.initializationState == AdapterStatus.State.READY }.size
+            if (numNetworksReady >= 1) continuation.resume(Resource.Success(Unit))
+            else continuation.resume(Resource.Error(Failure.NoAdNetworksInitialized))
         }
     }
 
-    private fun launchMainActivityThenFinish() {
+    private fun launchMainActivity() {
         startActivity(Intent(this, MainActivity::class.java))
         finish()
     }
@@ -143,11 +186,11 @@ class InitActivity : AppCompatActivity() {
      * Called from the refresh button in activity_init_error
      * */
     fun refresh(view: View) {
-        setLoadingState()
-        requestConsentInfoUpdateThenLoadConsentForm()
+        initializeAndLaunchMainActivity()
     }
 
     private fun setLoadingState() = setContentView(R.layout.activity_init_loading)
+
     private fun setErrorState(userMessage: String) {
         Toast.makeText(this, userMessage, Toast.LENGTH_SHORT).show()
         setContentView(R.layout.activity_init_error)
