@@ -2,7 +2,7 @@ package com.solvind.skycams.app.data.repo.mappers
 
 import com.google.firebase.firestore.DocumentSnapshot
 import com.solvind.skycams.app.core.IMapper
-import com.solvind.skycams.app.domain.enums.AuroraPredictionLabel
+import com.solvind.skycams.app.domain.enums.AuroraPrediction
 import com.solvind.skycams.app.domain.model.ImageInfo
 import com.solvind.skycams.app.domain.model.Skycam
 import com.solvind.skycams.app.domain.model.SkycamLocation
@@ -34,11 +34,10 @@ class SnapshotToSkycamMapper @Inject constructor() : IMapper<DocumentSnapshot, S
             timestamp = left.getLong("mostRecentImage.timestamp") ?: 0L,
             sunElevation = left.getDouble("mostRecentImage.sunElevation") ?: 0.0,
             moonPhase = left.getDouble("mostRecentImage.moonPhase") ?: 0.0,
-            predictionConfidence = left.getDouble("mostRecentImage.predictionConfidence") ?: 0.0,
-            predictionLabel = when(left.getString("mostRecentImage.predictionLabel")) {
-                "visibleAurora" -> AuroraPredictionLabel.VISIBLE_AURORA
-                "notAurora" -> AuroraPredictionLabel.NOT_AURORA
-                else -> AuroraPredictionLabel.NOT_PREDICTED
+            prediction = when (left.getString("predictionLabel")) {
+                "visibleAurora" -> AuroraPrediction.VisibleAurora(confidence = left.getDouble("predictionConfidence") ?: 0.51)
+                "notAurora" -> AuroraPrediction.NotAurora(confidence = left.getDouble("predictionConfidence") ?: 0.51)
+                else -> AuroraPrediction.NotPredicted()
             }
 
         )

@@ -2,7 +2,7 @@ package com.solvind.skycams.app.service
 
 import androidx.lifecycle.LifecycleCoroutineScope
 import com.solvind.skycams.app.di.IoDispatcher
-import com.solvind.skycams.app.domain.enums.AuroraPredictionLabel
+import com.solvind.skycams.app.domain.enums.AuroraPrediction
 import com.solvind.skycams.app.domain.model.AlarmConfig
 import com.solvind.skycams.app.domain.model.Skycam
 import com.solvind.skycams.app.domain.usecases.GetSkycamFlowUseCase
@@ -53,14 +53,14 @@ class SkycamListenerHandler @Inject constructor(
                                 if (index == 0) {
                                     mAlarmStatusUpdateChannel.send(AlarmStatus.Activated(skycam, alarmConfig))
                                 } else {
-                                    when (skycam.mostRecentImage.predictionLabel) {
-                                        AuroraPredictionLabel.VISIBLE_AURORA -> mSkycamUpdateChannel.send(
+                                    when (skycam.mostRecentImage.prediction) {
+                                        is AuroraPrediction.VisibleAurora -> mSkycamUpdateChannel.send(
                                             PredictedSkycamUpdate.VisibleAurora(skycam, alarmConfig)
                                         )
-                                        AuroraPredictionLabel.NOT_AURORA -> mSkycamUpdateChannel.send(
+                                        is AuroraPrediction.NotAurora -> mSkycamUpdateChannel.send(
                                             PredictedSkycamUpdate.NotAurora(skycam, alarmConfig)
                                         )
-                                        AuroraPredictionLabel.NOT_PREDICTED -> mSkycamUpdateChannel.send(
+                                        is AuroraPrediction.NotPredicted -> mSkycamUpdateChannel.send(
                                             PredictedSkycamUpdate.NotPredicted(skycam, alarmConfig)
                                         )
                                     }
@@ -93,17 +93,17 @@ class SkycamListenerHandler @Inject constructor(
     }
 }
 
-sealed class PredictedSkycamUpdate {
-    data class VisibleAurora(val skycam: Skycam, val alarmConfig: AlarmConfig) : PredictedSkycamUpdate()
-    data class NotAurora(val skycam: Skycam, val alarmConfig: AlarmConfig) : PredictedSkycamUpdate()
-    data class NotPredicted(val skycam: Skycam, val alarmConfig: AlarmConfig) : PredictedSkycamUpdate()
+sealed class PredictedSkycamUpdate(open val skycam: Skycam, open val alarmConfig: AlarmConfig) {
+    data class VisibleAurora(override val skycam: Skycam, override val alarmConfig: AlarmConfig) : PredictedSkycamUpdate(skycam, alarmConfig)
+    data class NotAurora(override val skycam: Skycam, override val alarmConfig: AlarmConfig) : PredictedSkycamUpdate(skycam, alarmConfig)
+    data class NotPredicted(override val skycam: Skycam, override val alarmConfig: AlarmConfig) : PredictedSkycamUpdate(skycam, alarmConfig)
 }
 
-sealed class AlarmStatus(val alarmConfig: AlarmConfig) {
-    data class Activated(val skycam: Skycam, val ac: AlarmConfig) : AlarmStatus(ac)
-    data class Deactivated(val ac: AlarmConfig) : AlarmStatus(ac)
-    data class DeactivatedDueToReset(val ac: AlarmConfig) : AlarmStatus(ac)
-    data class Timeout(val ac: AlarmConfig) : AlarmStatus(ac)
+sealed class AlarmStatus(open val alarmConfig: AlarmConfig) {
+    data class Activated(val skycam: Skycam, override val alarmConfig: AlarmConfig) : AlarmStatus(alarmConfig)
+    data class Deactivated(override val alarmConfig: AlarmConfig) : AlarmStatus(alarmConfig)
+    data class DeactivatedDueToReset(override val alarmConfig: AlarmConfig) : AlarmStatus(alarmConfig)
+    data class Timeout(override val alarmConfig: AlarmConfig) : AlarmStatus(alarmConfig)
 }
 
 object CanceledByUser : CancellationException()

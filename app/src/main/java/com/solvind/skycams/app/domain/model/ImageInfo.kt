@@ -1,6 +1,6 @@
 package com.solvind.skycams.app.domain.model
 
-import com.solvind.skycams.app.domain.enums.AuroraPredictionLabel
+import com.solvind.skycams.app.domain.enums.AuroraPrediction
 
 
 data class ImageInfo(
@@ -10,6 +10,5 @@ data class ImageInfo(
     val timestamp: Long,
     val sunElevation: Double,
     val moonPhase: Double,
-    val predictionConfidence: Double,
-    val predictionLabel: AuroraPredictionLabel,
+    val prediction: AuroraPrediction,
 )
