@@ -9,7 +9,7 @@ interface IAlarmConfigRepo {
     suspend fun getAlarmConfig(skycamKey: String): Resource<AlarmConfig>
     suspend fun getAllAlarmConfigs() : Resource<List<AlarmConfig>>
     fun getAlarmConfigFlow(skycamKey: String): Flow<AlarmConfig>
-    fun getAllAlarmConfigFlows() : Flow<List<AlarmConfig>>
+    fun getAllAlarmConfigFlows() : Flow<AlarmConfig>
     suspend fun setAlarmConfig(skycamKey: String, alarmAvailableUntil: Long, isActive: Boolean): Resource<kotlin.Unit>
 
 }

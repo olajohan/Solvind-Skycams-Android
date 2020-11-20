@@ -59,18 +59,20 @@ class FirestoreAlarmConfigRepoImpl @Inject constructor(
     /**
      * @throws UserIdIsNullException
      * */
-    override fun getAllAlarmConfigFlows(): Flow<List<AlarmConfig>> = callbackFlow {
+    override fun getAllAlarmConfigFlows(): Flow<AlarmConfig> = callbackFlow {
         val uid = firebaseAuth.uid ?: throw UserIdIsNullException
         val collectionQuery = firestore.collection(USER_DATA_COLLECTION).document(uid)
             .collection(ALARMS_COLLECTION)
 
         val subscription = collectionQuery.addSnapshotListener { querySnapshot, error ->
-            if (error != null) throw error
-            if (querySnapshot != null && !querySnapshot.isEmpty) offer(
-                mapper.listFromLeftToRight(
-                    querySnapshot.documents
-                )
-            )
+            if (error != null) {
+                throw error
+            }
+            if (querySnapshot != null && !querySnapshot.isEmpty)  {
+                querySnapshot.documents.forEach {
+                    offer(mapper.singleFromLeftToRight(it))
+                }
+            }
         }
         awaitClose { subscription.remove() }
     }

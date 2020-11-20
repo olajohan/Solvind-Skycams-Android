@@ -8,6 +8,6 @@ import javax.inject.Inject
 
 open class GetAllAlarmsFlowUseCase @Inject constructor(
     private val alarmConfigRepo: IAlarmConfigRepo
-) : UseCaseFlow<Flow<List<AlarmConfig>>, UseCaseFlow.None>() {
-    override fun run(params: None): Flow<List<AlarmConfig>> = alarmConfigRepo.getAllAlarmConfigFlows()
+) : UseCaseFlow<Flow<AlarmConfig>, UseCaseFlow.None>() {
+    override fun run(params: None): Flow<AlarmConfig> = alarmConfigRepo.getAllAlarmConfigFlows()
 }

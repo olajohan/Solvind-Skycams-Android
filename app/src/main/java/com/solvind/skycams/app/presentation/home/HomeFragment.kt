@@ -1,11 +1,9 @@
 package com.solvind.skycams.app.presentation.home
 
-import android.graphics.drawable.Icon
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -54,46 +52,8 @@ class HomeFragment(
             viewLifecycleOwner,
             { skycamBottomSheetViewState ->
                 BottomSheetBehavior.from(skycam_bottom_sheet).state = skycamBottomSheetViewState.state
+
             })
-
-        mViewModel.alarmButtonViewState.observe(viewLifecycleOwner) { state ->
-            when (state) {
-
-                HomeViewModel.AlarmButtonViewState.Loading -> { }
-
-                is HomeViewModel.AlarmButtonViewState.Activated -> {
-                    mBinding.fabAlarm.apply {
-                        setOnClickListener { mViewModel.deactivateAlarm(state.alarmConfig.skycamKey) }
-                        icon = Icon.createWithResource(
-                            requireContext(),
-                            R.drawable.ic_baseline_alarm_on_24
-                        ).loadDrawable(requireContext())
-                        extend()
-                    }
-                }
-
-                is HomeViewModel.AlarmButtonViewState.Deactivated -> mBinding.fabAlarm.apply {
-                    setOnClickListener { mViewModel.activateAlarm(state.alarmConfig.skycamKey) }
-                    icon = Icon.createWithResource(
-                        requireContext(),
-                        R.drawable.ic_baseline_alarm_add_24
-                    ).loadDrawable(requireContext())
-                    text = ""
-                    shrink()
-                }
-                is HomeViewModel.AlarmButtonViewState.TimedOut -> mBinding.fabAlarm.apply {
-                    setOnClickListener {
-                        Toast.makeText(requireContext(), "Watch ads to gain more alarm minutes", Toast.LENGTH_LONG).show()
-                    }
-                    shrink()
-                    icon = Icon.createWithResource(
-                        requireContext(),
-                        R.drawable.ic_baseline_alarm_off_24
-                    ).loadDrawable(requireContext())
-                    text = ""
-                }
-            }
-        }
 
         mAdProvider.adState.observe(viewLifecycleOwner) {
             when (it) {
