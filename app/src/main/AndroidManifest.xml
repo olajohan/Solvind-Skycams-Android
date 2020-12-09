@@ -25,21 +25,24 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.solvind.skycams.app.presentation.MainActivity">
+        <activity
+            android:name="com.solvind.skycams.app.presentation.MainActivity"
+            android:launchMode="singleTop"
+            >
             <nav-graph android:value="@navigation/nav_graph_root" />
         </activity>
+
+        <activity
+            android:name=".presentation.ads.RewardedAdActivity"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            />
 
         <service
             android:name=".service.AlarmServiceImpl"
             android:exported="false"
             />
-
-        <uses-library android:name="android.test.runner"
-            android:required="false" />
-        <uses-library android:name="android.test.base"
-            android:required="false" />
-        <uses-library android:name="android.test.mock"
-            android:required="false" />
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
@@ -47,7 +50,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="@string/maps_api_key" />
+            android:value="${mapsApiKey}" />
 
     </application>
 

@@ -2,10 +2,10 @@
 buildscript {
 
     ext {
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 9
+        versionName = "0.0.3"
         buildToolsVersion = "30.0.2"
-        kotlin_version = "1.4.10"
+        kotlin_version = "1.4.2"
 
         minSdk = 27
         compileSdk = 30
@@ -24,10 +24,12 @@ buildscript {
 
     dependencies {
         classpath 'com.android.tools.build:gradle:4.1.1'
-        classpath  "org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.10"
+        classpath  "org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.20"
         classpath  "com.google.dagger:hilt-android-gradle-plugin:2.29.1-alpha"
-        classpath  "androidx.navigation:navigation-safe-args-gradle-plugin:2.3.1"
+        classpath  "androidx.navigation:navigation-safe-args-gradle-plugin:2.3.2"
+
         classpath "com.google.gms:google-services:4.3.4"
+        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.4.1'
     }
 }
 

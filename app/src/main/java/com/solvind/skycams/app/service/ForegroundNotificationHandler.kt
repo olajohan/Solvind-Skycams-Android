@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.toBitmap
 import coil.request.ErrorResult
@@ -15,10 +16,14 @@ import com.solvind.skycams.app.R
 import com.solvind.skycams.app.core.*
 import com.solvind.skycams.app.di.AuroraAlarmAppspot
 import com.solvind.skycams.app.di.SkycamImages
+import com.solvind.skycams.app.domain.enums.AuroraPrediction
+import com.solvind.skycams.app.domain.model.Skycam
+import com.solvind.skycams.app.presentation.MainActivity
+import com.solvind.skycams.app.presentation.ads.RewardedAdActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped
 import io.github.rosariopfernandes.firecoil.FireCoil
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
@@ -26,7 +31,20 @@ import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.coroutines.coroutineContext
 
+/**
+ * Responsible for creating a foreground notification displaying one active alarm at a time.
+ *
+ * It will keep a map of all the users active alarms. The foreground notification will have buttons
+ * for the user to navigate next/previous in the map of active alarms. When the user navigates through the
+ * active alarms we change the foreground notification to show the user the next/previous alarm in the map.
+ *
+ * It depends on the client to forward alarm and skycam updates to update the current foreground notification.
+ *
+ * If there are no active alarms the foreground notification [StateFlow] should be set to null
+ *
+ * */
 @ExperimentalCoroutinesApi
 @ServiceScoped
 class ForegroundNotificationHandler @Inject constructor(
@@ -39,43 +57,60 @@ class ForegroundNotificationHandler @Inject constructor(
     val foregroundNotification = mForegroundNotification as StateFlow<Notification?>
 
     private val mMutex = Mutex()
-    private val mActivatedAlarmsMap = mutableMapOf<String, AlarmStatus.Activated>()
+
+    /**
+     * Map of all the users active alarms.
+     *
+     * @MapKey unique skycamKey per skycam
+     * @MapValue [AlarmStatusUpdate.Activated]
+     * */
+    private val mActivatedAlarmsMap = mutableMapOf<String, AlarmStatusUpdate.Activated>()
 
     private var mSelectedKey: String? = null
     private var mLiveView = false
+    private var mLiveViewTimer: Job? = null
 
     init {
         createForegroundNotificationChannel()
     }
 
-    suspend fun updateAlarmStatus(alarmStatus: AlarmStatus) {
-        when (alarmStatus) {
-            is AlarmStatus.Activated -> {
-                addOrUpdateList(alarmStatus)
+    suspend fun updateAlarmStatus(alarmStatusUpdate: AlarmStatusUpdate) {
+        when (alarmStatusUpdate) {
+            is AlarmStatusUpdate.Activated -> {
+                addOrUpdateList(alarmStatusUpdate)
             }
-            else -> removeFromList(alarmStatus)
+            else -> removeFromList(alarmStatusUpdate)
         }
+        Timber.i("Alarm update received: $alarmStatusUpdate")
         updateForegroundNotification()
     }
 
+    /**
+     * Updates a single skycam in the map access by a unique skycamKey
+     *
+     * @param predictedSkycamUpdate
+     * */
     suspend fun updateActiveAlarm(predictedSkycamUpdate: PredictedSkycamUpdate) {
         val skycam = predictedSkycamUpdate.skycam
         val alarmConfig = predictedSkycamUpdate.alarmConfig
-        addOrUpdateList(AlarmStatus.Activated(skycam, alarmConfig))
+        addOrUpdateList(AlarmStatusUpdate.Activated(skycam, alarmConfig))
         if (skycam.skycamKey == mSelectedKey) {
             updateForegroundNotification()
         }
     }
 
-    private suspend fun addOrUpdateList(alarmStatus: AlarmStatus.Activated) = mMutex.withLock {
-        mActivatedAlarmsMap[alarmStatus.alarmConfig.skycamKey] = alarmStatus
+    private suspend fun addOrUpdateList(alarmStatusUpdate: AlarmStatusUpdate.Activated) = mMutex.withLock {
+        mActivatedAlarmsMap[alarmStatusUpdate.alarmConfig.skycamKey] = alarmStatusUpdate
     }
 
-    private suspend fun removeFromList(alarmStatus: AlarmStatus) = mMutex.withLock {
-        mActivatedAlarmsMap.remove(alarmStatus.alarmConfig.skycamKey)
+    private suspend fun removeFromList(alarmStatusUpdate: AlarmStatusUpdate) = mMutex.withLock {
+        mActivatedAlarmsMap.remove(alarmStatusUpdate.alarmConfig.skycamKey)
     }
 
-    suspend fun selectNextFromList() = mMutex.withLock {
+    /**
+     * Changes the foreground notification to display the next activated skycam alarm
+     * */
+    suspend fun selectNextFromListAndUpdateForegroundNotification() = mMutex.withLock {
         val nextIndex = (mActivatedAlarmsMap.keys.indexOf(mSelectedKey) + 1).let {
             if (it >= mActivatedAlarmsMap.size) { 0 } else { it }
         }
@@ -84,7 +119,10 @@ class ForegroundNotificationHandler @Inject constructor(
         updateForegroundNotification()
     }
 
-    suspend fun selectPreviousFromList() = mMutex.withLock {
+    /**
+     * Changes the foreground notification to display the previous activated skycam alarm
+     * */
+    suspend fun selectPreviousFromListAndUpdateForegroundNotification() = mMutex.withLock {
         val previousIndex = (mActivatedAlarmsMap.keys.indexOf(mSelectedKey) -1).let {
             if (it < 0) { mActivatedAlarmsMap.keys.size - 1 } else { it }
         }
@@ -93,9 +131,21 @@ class ForegroundNotificationHandler @Inject constructor(
         updateForegroundNotification()
     }
 
+    /**
+     * Toggle if the foreground notification's image should display the main image of the skycam
+     * or live updates.
+     * */
     suspend fun toggleLiveView() {
         mLiveView = !mLiveView
         updateForegroundNotification()
+        mLiveViewTimer?.cancelAndJoin()
+        if (mLiveView) {
+            mLiveViewTimer = CoroutineScope(coroutineContext).launch {
+                Toast.makeText(context, "Live view activated for 2 minutes", Toast.LENGTH_SHORT).show()
+                delay(120_000)
+                toggleLiveView()
+            }
+        }
     }
 
     private suspend fun updateForegroundNotification() {
@@ -110,22 +160,46 @@ class ForegroundNotificationHandler @Inject constructor(
         }
 
         val activeAlarm = mActivatedAlarmsMap[mSelectedKey] ?: mActivatedAlarmsMap.values.first()
-
-        val notificationBuilder =
-            NotificationCompat.Builder(context, SERVICE_FOREGROUND_NOTIFICATIONS_CHANNEl_ID)
-
+        val notificationBuilder = NotificationCompat.Builder(context, SERVICE_FOREGROUND_NOTIFICATIONS_CHANNEl_ID)
         val skycam = activeAlarm.skycam
         val alarmConfig = activeAlarm.alarmConfig
-        val timeoutTimeStamp =
-            TimeUnit.SECONDS.toMillis(alarmConfig.alarmAvailableUntilEpochSeconds)
+
+        /*
+        * Used as seed for the chronometer countdown timer indicating how long the alarm will be active for
+        * */
+        val timeoutTimeStamp = TimeUnit.SECONDS.toMillis(alarmConfig.alarmAvailableUntilEpochSeconds)
+
+
+        Timber.i("Most recent prediction ${skycam.mostRecentImage.prediction}")
+
+        /*
+        * The text that will be displayed beneath the title of the skycam
+        * */
+        val contentText = when(val prediction = skycam.mostRecentImage.prediction) {
+
+            is AuroraPrediction.NotPredicted -> prediction.name
+            is AuroraPrediction.NotAurora -> {
+                String.format("%s: %.1f%s", prediction.name, prediction.confidence*100, "%")
+            }
+            is AuroraPrediction.VisibleAurora -> {
+                String.format("%s: %.1f%s", prediction.name, prediction.confidence*100, "%")
+            }
+
+        }
 
         notificationBuilder.apply {
-            setStyle(androidx.media.app.NotificationCompat.MediaStyle())
+            setStyle(
+                androidx.media.app.NotificationCompat.MediaStyle()
+                    .setShowActionsInCompactView(0, 1, 2)
+            )
             setWhen(timeoutTimeStamp)
             setUsesChronometer(true)
             setContentTitle(skycam.location.name)
-            setContentText(skycam.mostRecentImage.timestamp.toString())
+            setContentText(contentText)
             setSmallIcon(R.drawable.ic_solvindhvit)
+            setContentIntent(getContentPendingIntent(skycam))
+            setOngoing(true)
+            setProgress(0, 0, true)
             addAction(
                 R.drawable.ic_baseline_navigate_before_24,
                 "Previous",
@@ -142,6 +216,11 @@ class ForegroundNotificationHandler @Inject constructor(
                 getSelectNextPendingIntent()
             )
             addAction(
+                R.drawable.ic_baseline_more_time_24,
+                "Watch ad",
+                getWatchAdPendingIntent(skycam.skycamKey)
+            )
+            addAction(
                 R.drawable.ic_baseline_preview_24,
                 "Live",
                 getToggleLiveViewPendingIntent()
@@ -155,13 +234,31 @@ class ForegroundNotificationHandler @Inject constructor(
         }
 
         when (val mainImageLoadingResult = FireCoil.get(context, mainImageRef)) {
-            is SuccessResult -> notificationBuilder.setLargeIcon(mainImageLoadingResult.drawable.toBitmap())
+            is SuccessResult -> {
+                notificationBuilder.setLargeIcon(mainImageLoadingResult.drawable.toBitmap())
+            }
             is ErrorResult -> Timber.i("Error while loading main image: ${mainImageLoadingResult.throwable.message}")
         }
 
         mForegroundNotification.value = notificationBuilder.build()
     }
 
+    private fun getContentPendingIntent(skycam: Skycam) =
+        Intent(context, MainActivity::class.java).let { contentIntent ->
+            contentIntent.action = ACTIVITY_OPEN_SINGLE_SKYCAM_ACTION
+            contentIntent.putExtra(INTENT_EXTRA_SKYCAMKEY, skycam.skycamKey)
+            contentIntent.putExtra(INTENT_EXTRA_SKYCAM_NAME, skycam.location.name)
+            contentIntent.putExtra(INTENT_EXTRA_SKYCAM_MAIN_IMAGE, skycam.mainImage)
+
+            contentIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+            PendingIntent.getActivity(
+                context,
+                ACTIVITY_OPEN_SINGLE_SKYCAM_REQUEST_CODE,
+                contentIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        }
 
     private fun getSelectNextPendingIntent() =
         Intent(context, AlarmServiceImpl::class.java).let { selectNextIntent ->
@@ -194,6 +291,23 @@ class ForegroundNotificationHandler @Inject constructor(
                 context,
                 SERVICE_CANCEL_SINGLE_ALARM_REQUEST_CODE,
                 cancelSingleAlarmIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        }
+
+    private fun getWatchAdPendingIntent(skycamKey: String) =
+        Intent(context, RewardedAdActivity::class.java).let { watchAdIntent ->
+
+            watchAdIntent.apply {
+                action = ACTIVITY_WATCH_AD_INTENT_ACTION
+                putExtra(INTENT_EXTRA_SKYCAMKEY, skycamKey)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+
+            PendingIntent.getActivity(
+                context,
+                ACTIVITY_WATCH_AD_REQUEST_CODE,
+                watchAdIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT
             )
         }

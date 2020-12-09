@@ -34,9 +34,9 @@ class SnapshotToSkycamMapper @Inject constructor() : IMapper<DocumentSnapshot, S
             timestamp = left.getLong("mostRecentImage.timestamp") ?: 0L,
             sunElevation = left.getDouble("mostRecentImage.sunElevation") ?: 0.0,
             moonPhase = left.getDouble("mostRecentImage.moonPhase") ?: 0.0,
-            prediction = when (left.getString("predictionLabel")) {
-                "visibleAurora" -> AuroraPrediction.VisibleAurora(confidence = left.getDouble("predictionConfidence") ?: 0.51)
-                "notAurora" -> AuroraPrediction.NotAurora(confidence = left.getDouble("predictionConfidence") ?: 0.51)
+            prediction = when (left.getString("mostRecentImage.predictionLabel")) {
+                "visibleAurora" -> AuroraPrediction.VisibleAurora(confidence = left.getDouble("mostRecentImage.predictionConfidence") ?: 0.51)
+                "notAurora" -> AuroraPrediction.NotAurora(confidence = left.getDouble("mostRecentImage.predictionConfidence") ?: 0.51)
                 else -> AuroraPrediction.NotPredicted()
             }
 

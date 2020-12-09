@@ -91,7 +91,7 @@ class FirestoreAlarmConfigRepoImpl @Inject constructor(
         skycamKey: String,
         alarmAvailableUntil: Long,
         isActive: Boolean
-    ): Resource<kotlin.Unit> {
+    ): Resource<Unit> {
         val uid = firebaseAuth.uid ?: return Resource.Error(Failure.UserIdNullFailure)
         val result = firestore.collection(USER_DATA_COLLECTION).document(uid)
             .collection(ALARMS_COLLECTION).document(skycamKey).set(

@@ -28,6 +28,24 @@ class FirestoreSkycamRepoImpl @Inject constructor(
         return Resource.Success(mapper.listFromLeftToRight(collection.documents))
     }
 
+    override fun getAllSkycamsFlow(): Flow<Skycam> = callbackFlow {
+        val collectionQuery = firestore.collection(SKYCAM_COLLECTION)
+
+        val subscription = collectionQuery.addSnapshotListener { querySnapshot, error ->
+            if (error != null) {
+                throw error
+            }
+
+            if (querySnapshot != null && !querySnapshot.isEmpty) {
+                querySnapshot.documents.forEach {
+                    offer(mapper.singleFromLeftToRight(it))
+                }
+                close()
+            }
+        }
+        awaitClose { subscription.remove() }
+    }
+
     override suspend fun getSkycam(skycamKey: String): Resource<Skycam> {
         val result = firestore.collection(SKYCAM_COLLECTION).document(skycamKey).get()
         val document = result.await()
@@ -38,8 +56,12 @@ class FirestoreSkycamRepoImpl @Inject constructor(
     override fun getSkycamFlow(skycamKey: String): Flow<Skycam> = callbackFlow {
         val document = firestore.collection(SKYCAM_COLLECTION).document(skycamKey)
         val listener = document.addSnapshotListener { snapshot, exception ->
-            if (exception != null) throw exception
-            if (snapshot != null) offer(mapper.singleFromLeftToRight(snapshot))
+            if (exception != null) {
+                throw exception
+            }
+            if (snapshot != null) {
+                offer(mapper.singleFromLeftToRight(snapshot))
+            }
         }
         awaitClose {
             listener.remove()

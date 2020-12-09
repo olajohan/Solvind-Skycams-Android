@@ -10,9 +10,11 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
-import com.google.android.material.snackbar.BaseTransientBottomBar
-import com.google.android.material.snackbar.Snackbar
 import com.solvind.skycams.app.R
+import com.solvind.skycams.app.core.*
+import com.solvind.skycams.app.domain.model.Skycam
+import com.solvind.skycams.app.presentation.ads.RewardedAdActivity
+import com.solvind.skycams.app.presentation.single.SingleSkycamFragmentDirections
 import com.solvind.skycams.app.service.AlarmServiceImpl
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_main.*
@@ -28,7 +30,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
-    private lateinit var mConnectionErrorSnackbar: Snackbar
     private lateinit var mService: AlarmServiceImpl
 
     /**
@@ -56,24 +57,6 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
         bottom_nav.setupWithNavController(navController)
-        mConnectionErrorSnackbar = createConnectionErrorSnackBar()
-    }
-
-    private fun createConnectionErrorSnackBar() = Snackbar.make(
-        main_coordinatorLayout,
-        getString(R.string.connection_error_text),
-        Snackbar.LENGTH_INDEFINITE
-    ).apply {
-        anchorView = bottom_nav
-
-        /**
-         * Makes the snackbar sticky, so it won't be possible to swipe it away.
-         * */
-        behavior = object : BaseTransientBottomBar.Behavior() {
-            override fun canSwipeDismissView(child: View): Boolean {
-                return false
-            }
-        }
     }
 
     /**
@@ -87,6 +70,59 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             startService(it)
             bindService(it, serviceConnection, Context.BIND_AUTO_CREATE)
         }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+
+        intent?.let {
+
+            when (it.action) {
+                ACTIVITY_OPEN_SINGLE_SKYCAM_ACTION -> {
+                    val skycamKey = it.extras?.getString(INTENT_EXTRA_SKYCAMKEY)
+                    val skycamName = it.extras?.getString(INTENT_EXTRA_SKYCAM_NAME)
+                    val skycamMainImage = it.extras?.getString(INTENT_EXTRA_SKYCAM_MAIN_IMAGE)
+
+                    if (skycamKey != null && skycamName != null && skycamMainImage != null) {
+                        navigateToSingleSkycam(skycamKey, skycamName, skycamMainImage)
+                    }
+                }
+            }
+        }
+    }
+
+    fun onClickWatchAdForReward(view: View) =
+        Intent(this, RewardedAdActivity::class.java).apply {
+            view.tag?.let { tag ->
+                when (tag) {
+                    is String -> {
+                        action = ACTIVITY_WATCH_AD_INTENT_ACTION
+                        putExtra(INTENT_EXTRA_SKYCAMKEY, tag)
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(this)
+                    }
+                }
+            }
+
+        }
+
+    fun onClickNavigateToSingleSkycam(view: View) {
+        view.tag.let { tag ->
+            when (tag) {
+                is Skycam -> {
+                    navigateToSingleSkycam(tag.skycamKey, tag.location.name, tag.mainImage)
+                }
+            }
+        }
+    }
+
+    private fun navigateToSingleSkycam(skycamKey: String, skycamName: String, skycamMainImage: String) {
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navHostFragment.navController.navigate(SingleSkycamFragmentDirections.actionNavigateToSingle(
+            skycamKey,
+            skycamName,
+            skycamMainImage
+        ))
     }
 
     /**

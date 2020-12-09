@@ -5,82 +5,108 @@ import androidx.lifecycle.*
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.solvind.skycams.app.core.Resource
 import com.solvind.skycams.app.core.UseCase
+import com.solvind.skycams.app.domain.model.AlarmConfig
 import com.solvind.skycams.app.domain.model.Skycam
 import com.solvind.skycams.app.domain.usecases.*
+import com.solvind.skycams.app.presentation.ads.RewardedAdLoader
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
+@FlowPreview
 @ExperimentalCoroutinesApi
 class HomeViewModel @ViewModelInject constructor(
-    private val getAllSkycamsUseCase: GetAllSkycamsUseCase,
-    private val getSkycamFlowUseCase: GetSkycamFlowUseCase,
-    private val getAlarmConfigUseCase: GetAlarmConfigUseCase,
-    private val getAlarmConfigFlowUseCase: GetAlarmConfigFlowUseCase,
-    private val activateAlarmConfigUseCase: ActivateAlarmConfigUseCase,
-    private val deactivateAlarmConfigUseCase: DeactivateAlarmConfigUseCase,
-    private val updateAlarmConfigConfigUseCase: UpdateAlarmConfigTimeUseCase
+    private val mGetAllSkycamsUSeCase: GetAllSkycamsUseCase,
+    private val mGetSkycamFlowUseCase: GetSkycamFlowUseCase,
+    private val mGetAlarmConfigFlowUseCase: GetAlarmConfigFlowUseCase,
+    private val mActivateAlarmConfigUseCase: ActivateAlarmConfigUseCase,
+    private val mDeactivateAlarmConfigUseCase: DeactivateAlarmConfigUseCase,
+    private val mRewardedAdLoader: RewardedAdLoader
 ) : ViewModel() {
 
-    private val mSkycamBottomSheetViewState = MutableStateFlow<SkycamBottomSheetViewState>(SkycamBottomSheetViewState.Hidden)
-    val skycamBottomSheetViewState = mSkycamBottomSheetViewState.asStateFlow().asLiveData()
+    private val mSkycamList = MutableLiveData<List<Skycam>>()
+    val skycamList = mSkycamList as LiveData<List<Skycam>>
 
+    private val mBottomSheetState = MutableStateFlow<BottomSheetViewState>(BottomSheetViewState.Hidden)
+    val bottomSheetState = mBottomSheetState.asStateFlow().asLiveData()
 
-    /**
-     * 1. Only emit skycam updates when the skycam bottom sheet is in the visible state.
-     * */
-    val skycamStream = mSkycamBottomSheetViewState.filter {
-        it is SkycamBottomSheetViewState.Visible
-    }.flatMapLatest {
-        val selectedSkycam = (it as SkycamBottomSheetViewState.Visible).skycam
-        getSkycamFlowUseCase.run(GetSkycamFlowUseCase.Params(selectedSkycam.skycamKey))
-    }.conflate().asLiveData()
+    val selectedSkycam = bottomSheetState.switchMap {
+        when (it) {
 
-    private val mSkycams = MutableLiveData<List<Skycam>>()
-    val skycams = mSkycams as LiveData<List<Skycam>>
+            is BottomSheetViewState.VisibleWithSkycam -> {
+                mGetSkycamFlowUseCase.run(GetSkycamFlowUseCase.Params(it.skycam.skycamKey)).asLiveData()
+            }
 
-    init { refreshSkycamList() }
+           else -> MutableLiveData(null)
+        }
+    }
 
-    private fun refreshSkycamList() = viewModelScope.launch {
-        getAllSkycamsUseCase(this, UseCase.None()) {
+    val fabState = mBottomSheetState.filterIsInstance<BottomSheetViewState.VisibleWithSkycam>()
+        .flatMapLatest {
+            mGetAlarmConfigFlowUseCase.run(GetAlarmConfigFlowUseCase.Params(it.skycam.skycamKey))
+        }
+        .map {
+            when {
+                it.hasTimedOut() -> FabState.AlarmTimedOut(it)
+                it.isActiveAndHasNotTimedOut() -> FabState.AlarmActivated(it)
+                else -> FabState.AlarmDeactivated(it)
+            }
+
+        }
+        .asLiveData()
+
+    init {
+        refreshSkycams()
+
+        /*
+        * Load an ad, so the user won't be waiting for the first ad request. This ad will not
+        * be shown before the user clicks to get more ad minutes.
+        * */
+        viewModelScope.launch {
+            mRewardedAdLoader.loadRewardedAd()
+        }
+    }
+
+    private fun refreshSkycams() = viewModelScope.launch {
+        mGetAllSkycamsUSeCase(this, UseCase.None()) {
             when (it) {
-                is Resource.Success -> mSkycams.postValue(it.value)
-                is Resource.Error -> Timber.i("Failure: ${it.failure}")
+                is Resource.Success -> mSkycamList.postValue(it.value)
+                is Resource.Error -> Timber.i("Error fetching skycams")
             }
         }
     }
 
-    fun selectMapObject(mapObject: Any?)  {
-        when(mapObject) {
-            is Skycam -> mSkycamBottomSheetViewState.value = SkycamBottomSheetViewState.Visible(mapObject)
-        }
+    fun hideBottomSheet() {
+        mBottomSheetState.value = BottomSheetViewState.Hidden
     }
 
-    fun clearMapObjectSelection() {
-        mSkycamBottomSheetViewState.value = SkycamBottomSheetViewState.Hidden
+    fun selectSkycam(skycam: Skycam) {
+        mBottomSheetState.value = BottomSheetViewState.VisibleWithSkycam(skycam)
     }
 
     fun activateAlarm(skycamKey: String) = viewModelScope.launch {
-        activateAlarmConfigUseCase(this, ActivateAlarmConfigUseCase.Params(skycamKey)) {
-            when(it) {
-                is Resource.Success -> { Timber.i("Alarm activated for $skycamKey") }
-                is Resource.Error -> { Timber.i("Error activating alarm: ${it.failure}") }
-            }
+        mActivateAlarmConfigUseCase(this, ActivateAlarmConfigUseCase.Params(skycamKey)) {
+            // TODO Handle error
         }
     }
 
     fun deactivateAlarm(skycamKey: String) = viewModelScope.launch {
-        deactivateAlarmConfigUseCase(this, DeactivateAlarmConfigUseCase.Params(skycamKey)) {
-            when (it) {
-                is Resource.Success -> Timber.i("Alarm deactivated for $skycamKey")
-                is Resource.Error -> Timber.i("Error deactivating alarm: ${it.failure}")
-            }
+        mDeactivateAlarmConfigUseCase(this, DeactivateAlarmConfigUseCase.Params(skycamKey)) {
+            // TODO Handle error
         }
     }
+}
 
-    sealed class SkycamBottomSheetViewState(val state: Int) {
-        object Hidden : SkycamBottomSheetViewState(BottomSheetBehavior.STATE_HIDDEN)
-        data class Visible (val skycam: Skycam) : SkycamBottomSheetViewState(BottomSheetBehavior.STATE_HALF_EXPANDED)
-    }
+sealed class BottomSheetViewState(val state: Int) {
+    object Hidden : BottomSheetViewState(BottomSheetBehavior.STATE_HIDDEN)
+    data class VisibleWithSkycam(val skycam: Skycam) : BottomSheetViewState(BottomSheetBehavior.STATE_EXPANDED)
+}
+
+sealed class FabState {
+    object Hidden : FabState()
+    data class AlarmActivated(val alarmConfig: AlarmConfig) : FabState()
+    data class AlarmDeactivated(val alarmConfig: AlarmConfig) : FabState()
+    data class AlarmTimedOut(val alarmConfig: AlarmConfig) : FabState()
 }

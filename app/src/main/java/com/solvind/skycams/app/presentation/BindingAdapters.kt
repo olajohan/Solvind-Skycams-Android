@@ -6,9 +6,10 @@ import androidx.databinding.BindingAdapter
 import coil.clear
 import coil.request.CachePolicy
 import coil.transform.CircleCropTransformation
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.card.MaterialCardView
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
-import com.solvind.skycams.app.domain.model.AlarmConfig
 import com.solvind.skycams.app.presentation.home.TimeSinceChronometer
 import io.github.rosariopfernandes.firecoil.load
 import timber.log.Timber
@@ -99,9 +100,9 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("set_alarm_button_text")
-    fun setAlarmButtonText(view: Button, alarmConfig: AlarmConfig) {
-
+    @BindingAdapter("bottomSheetState")
+    fun bindingBottomSheet(container: MaterialCardView, state:Int) {
+        val behavior= BottomSheetBehavior.from(container)
+        behavior.state = state
     }
-
 }

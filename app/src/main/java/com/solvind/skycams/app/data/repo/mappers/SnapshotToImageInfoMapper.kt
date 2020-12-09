@@ -9,6 +9,7 @@ import javax.inject.Inject
 class SnapshotToImageInfoMapper @Inject constructor() : IMapper<DocumentSnapshot, ImageInfo> {
 
     override fun singleFromLeftToRight(left: DocumentSnapshot): ImageInfo {
+
         return ImageInfo(
             skycamKey = left.getString("skycamKey").orEmpty(),
             imageId = left.getString("imageId").orEmpty(),
@@ -16,9 +17,9 @@ class SnapshotToImageInfoMapper @Inject constructor() : IMapper<DocumentSnapshot
             timestamp = left.getLong("timestamp") ?: 0L,
             sunElevation = left.getDouble("sunElevation") ?: 0.0,
             moonPhase = left.getDouble("moonPhase") ?: 0.0,
-            prediction = when (left.getString("predictionLabel")) {
-                "visibleAurora" -> AuroraPrediction.VisibleAurora(confidence = left.getDouble("predictionConfidence") ?: 0.51)
-                "notAurora" -> AuroraPrediction.NotAurora(confidence = left.getDouble("predictionConfidence") ?: 0.51)
+            prediction = when (left.getString("mostRecentImage.predictionLabel")) {
+                "visibleAurora" -> AuroraPrediction.VisibleAurora(confidence = left.getDouble("mostRecentImage.predictionConfidence") ?: 0.51)
+                "notAurora" -> AuroraPrediction.NotAurora(confidence = left.getDouble("mostRecentImage.predictionConfidence") ?: 0.51)
                 else -> AuroraPrediction.NotPredicted()
             }
         )

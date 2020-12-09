@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface ISkycamRepo {
     suspend fun getAllSkycams(): Resource<List<Skycam>>
+    fun getAllSkycamsFlow() : Flow<Skycam>
     suspend fun getSkycam(skycamKey: String): Resource<Skycam>
     fun getSkycamFlow(skycamKey: String): Flow<Skycam>
 }

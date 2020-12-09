@@ -10,25 +10,27 @@
     </data>
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/coordinator_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fitsSystemWindows="true"
         tools:context="com.solvind.skycams.app.presentation.MainActivity">
 
-        <com.google.android.libraries.maps.MapView
+        <com.google.android.gms.maps.MapView
             android:id="@+id/mapView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:mapId="@string/map_id" />
+            />
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/skycam_bottom_sheet"
+            android:id="@+id/bottom_sheet"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
             app:behavior_hideable="true"
             app:behavior_peekHeight="100dp"
+            app:bottomSheetState="@{viewModel.bottomSheetState.state}"
             app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
             <LinearLayout
@@ -43,19 +45,22 @@
                     android:padding="16dp">
 
                     <!-- Title, secondary and supporting text -->
+
                     <TextView
                         android:id="@+id/skycam_title_textView"
                         android:layout_width="wrap_content"
-                        android:text="@{viewModel.skycamStream.location.name}"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@{viewModel.selectedSkycam.location.name}"
                         android:textAppearance="?attr/textAppearanceHeadline6" />
 
                     <com.solvind.skycams.app.presentation.home.TimeSinceChronometer
                         android:id="@+id/last_update_textView"
+                        reset_chronometer="@{viewModel.selectedSkycam.mostRecentImage.timestamp}"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        reset_chronometer="@{viewModel.skycamStream.mostRecentImage.timestamp}"
+                        android:layout_weight="1"
                         android:textAppearance="?attr/textAppearanceBody2"
                         android:textColor="?android:attr/textColorSecondary" />
 
@@ -69,35 +74,59 @@
                     <!-- Media -->
                     <ImageView
                         android:id="@+id/liveImage_imageView"
+                        load_skycam_image="@{viewModel.selectedSkycam.mostRecentImage.storageLocation}"
                         android:layout_width="match_parent"
-                        android:layout_height="350dp"
-                        load_skycam_image="@{viewModel.skycamStream.mostRecentImage.storageLocation}"
+                        android:layout_height="360dp"
                         android:adjustViewBounds="true"
-                        android:scaleType="centerCrop" />
+                        android:scaleType="fitCenter" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:tag="@{viewModel.selectedSkycam}"
+                        android:layout_margin="8dp"
+                        android:layout_weight="1"
+                        android:text="Details"
+                        android:onClick="onClickNavigateToSingleSkycam"
+                        />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:tag="@{viewModel.selectedSkycam.skycamKey}"
+                        android:layout_margin="8dp"
+                        android:layout_weight="1"
+                        android:text="+30 min"
+                        android:onClick="onClickWatchAdForReward"
+                        />
 
                 </LinearLayout>
 
             </LinearLayout>
 
-            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-                android:id="@+id/fab_alarm"
-                app:layout_anchor="@id/skycam_bottom_sheet"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="top|end"
-                />
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
-        <ProgressBar
-            android:id="@+id/ad_loading_progress"
-            style="?android:attr/progressBarStyle"
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab"
             android:layout_width="wrap_content"
-            android:visibility="gone"
             android:layout_height="wrap_content"
-            app:layout_anchor="@+id/mapView"
-            app:layout_anchorGravity="center" />
-
+            app:layout_anchor="@id/bottom_sheet"
+            app:useCompatPadding="true"
+            android:layout_gravity="center|end"
+            app:layout_anchorGravity="top|end"
+            />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>
