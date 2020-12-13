@@ -17,7 +17,7 @@ import com.solvind.skycams.app.R
 import com.solvind.skycams.app.core.*
 import com.solvind.skycams.app.di.AuroraAlarmAppspot
 import com.solvind.skycams.app.domain.model.AlarmConfig
-import com.solvind.skycams.app.domain.usecases.GetSkycamUseCase
+import com.solvind.skycams.app.domain.usecases.skycam.GetSkycamUseCase
 import com.solvind.skycams.app.presentation.ads.RewardedAdActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ServiceScoped

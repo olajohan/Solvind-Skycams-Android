@@ -1,7 +1,7 @@
 package com.solvind.skycams.app.core
 
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
@@ -13,10 +13,7 @@ import kotlinx.coroutines.launch
  * By convention each [UseCase] implementation will execute its job in a background thread
  * (kotlin coroutine) and will post the result in the UI thread.
  */
-abstract class UseCase<Type, in Params>(
-    private val ioDispatcher: CoroutineDispatcher,
-    private val mainDispatcher: CoroutineDispatcher
-) where Type : Any {
+abstract class UseCase<Type, in Params>() where Type : Any {
 
     abstract suspend fun run(params: Params): Resource<Type>
 
@@ -25,8 +22,8 @@ abstract class UseCase<Type, in Params>(
         params: Params,
         onResult: (Resource<Type>) -> Unit = {}
     ) {
-        val job = scope.async(ioDispatcher) { run(params) }
-        scope.launch(mainDispatcher) { onResult(job.await()) }
+        val job = scope.async(Dispatchers.IO) { run(params) }
+        scope.launch(Dispatchers.Main) { onResult(job.await()) }
     }
 
     class None

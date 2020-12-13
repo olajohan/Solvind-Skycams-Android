@@ -1,10 +1,10 @@
 package com.solvind.skycams.app.presentation.home
 
-import android.graphics.drawable.Icon
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.SeekBar
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -12,15 +12,20 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.maps.android.ktx.awaitMap
 import com.solvind.skycams.app.R
 import com.solvind.skycams.app.databinding.FragmentHomeBinding
+import com.solvind.skycams.app.domain.model.AlarmConfig
 import com.solvind.skycams.app.domain.model.Skycam
 import com.solvind.skycams.app.presentation.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.fragment_home.view.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import timber.log.Timber
+import java.util.concurrent.TimeUnit
 
 
 /**
@@ -86,21 +91,6 @@ class HomeFragment(
                 when (val tag = it.tag) {
                     is Skycam -> {
                         mViewModel.selectSkycam(tag)
-
-                        /*
-                        * Set the initial state of the fab to activate alarm in case the user
-                        * has never activated the alarm before.
-                        * */
-                        mBinding.fab.apply {
-                            setOnClickListener { mViewModel.activateAlarm(tag.skycamKey) }
-                            setImageIcon(
-                                Icon.createWithResource(
-                                    requireContext(),
-                                    R.drawable.ic_baseline_alarm_add_24
-                                )
-                            )
-                            show()
-                        }
                     }
                 }
                 return@setOnMarkerClickListener true
@@ -108,53 +98,54 @@ class HomeFragment(
 
             googleMap.setOnMapClickListener {
                 mViewModel.hideBottomSheet()
-                mBinding.fab.visibility = View.GONE
             }
 
-            mViewModel.skycamList.observe(viewLifecycleOwner, {
+            mViewModel.skycamList.observe(viewLifecycleOwner) {
                 mMapMarkerMarkerHandler.addSkycamMarkers(googleMap, it)
-            })
+            }
 
-            mViewModel.fabState.observe(viewLifecycleOwner) { fabState ->
-                when (fabState) {
-                    FabState.Hidden -> mBinding.fab.hide()
-                    is FabState.AlarmActivated -> {
-                        mBinding.fab.apply {
-                            setOnClickListener { mViewModel.deactivateAlarm(fabState.alarmConfig.skycamKey) }
-                            setImageIcon(
-                                Icon.createWithResource(
-                                    requireContext(),
-                                    R.drawable.ic_baseline_alarm_on_24
-                                )
-                            )
+            mViewModel.selectedSkycam.observe(viewLifecycleOwner) { skycamOrNull ->
+                mBinding.activateAlarmSwitch.setOnClickListener { switch ->
+                    switch as SwitchMaterial
+                    skycamOrNull?.let { skycam ->
+                        if (switch.isChecked) {
+                            mViewModel.activateAlarm(skycam.skycamKey)
+                        } else {
+                            mViewModel.deactivateAlarm(skycam.skycamKey)
                         }
                     }
-                    is FabState.AlarmDeactivated -> {
-                        mBinding.fab.apply {
-                            setOnClickListener { mViewModel.activateAlarm(fabState.alarmConfig.skycamKey) }
-                            setImageIcon(
-                                Icon.createWithResource(
-                                    requireContext(),
-                                    R.drawable.ic_baseline_alarm_add_24
-                                )
-                            )
+                }
+
+                skycamOrNull?.let {
+                    mBinding.thresholdSeekbar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+                        override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                            mBinding.thresholdPercentTextView.text = "$progress%"
                         }
-                    }
-                    is FabState.AlarmTimedOut -> {
-                        mBinding.fab.apply {
-                            this.tag = fabState.alarmConfig.skycamKey
-                            setOnClickListener {
-                                (requireActivity() as MainActivity).onClickWatchAdForReward(this)
+                        override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+
+                        override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                            seekBar?.progress?.let { progress ->
+                                mViewModel.setNewAlarmConfigThreshold(skycamOrNull.skycamKey, progress)
                             }
-                            setImageIcon(
-                                Icon.createWithResource(
-                                    requireContext(),
-                                    R.drawable.ic_baseline_more_time_24
-                                )
-                            )
                         }
-                    }
+                    })
+                } ?: mBinding.thresholdSeekbar.setOnSeekBarChangeListener(null)
+            }
 
+            mViewModel.selectedAlarmConfig.observe(viewLifecycleOwner) { alarmConfig ->
+                mBinding.thresholdSeekbar.progress = alarmConfig.threshold
+                mBinding.thresholdPercentTextView.text = "${alarmConfig.threshold}%"
+            }
+
+            mViewModel.showFirstTimeActivationDialog.observe(viewLifecycleOwner) { singleEvent ->
+                singleEvent.getContentIfNotHandled()?.let { skycamKey ->
+                    showFirstTimeActivatedAlarmDialog(skycamKey)
+                }
+            }
+
+            mViewModel.showAlarmHasTimedOutWhenActivatingDialog.observe(viewLifecycleOwner) { singleEvent ->
+                singleEvent.getContentIfNotHandled()?.let { alarmConfig ->
+                    showAlarmHasTimedOutWhenActivatingDialog(alarmConfig)
                 }
             }
 
@@ -166,10 +157,33 @@ class HomeFragment(
         }
     }
 
+    private fun showAlarmHasTimedOutWhenActivatingDialog(alarmConfig: AlarmConfig) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Alarm has timed out")
+            .setMessage("The alarm you have activated has timed out. Click the '+30 min' button to watch an ad and gain more minutes.")
+            .setPositiveButton("+30 min") { dialog, which ->
+                (requireActivity() as MainActivity).watchAdForReward(alarmConfig.skycamKey)
+            }
+            .setNegativeButton("Cancel") { dialog, which ->
+                Timber.i("Dismissed watch ad suggestion")
+            }
+            .show()
+
+    }
+
+    private fun showFirstTimeActivatedAlarmDialog(skycamKey: String) {
+        mViewModel.rewardUserAlarmTimeFirstActivation(skycamKey, TimeUnit.HOURS.toSeconds(1L))
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Congratulations!")
+            .setMessage("This is the first time you are activating the alarm for this skycam. You have receive 1h of free alarm time.")
+            .setPositiveButton("OK"
+            ) { dialog, which -> }.show()
+    }
+
     companion object {
         private const val MAPVIEW_BUNDLE_KEY = "MapViewBoundleKey"
     }
-
     override fun onSaveInstanceState(outState: Bundle) {
         val mapViewBundle = outState.getBundle(MAPVIEW_BUNDLE_KEY) ?: Bundle().apply {
             putBundle(MAPVIEW_BUNDLE_KEY, this)
@@ -177,32 +191,26 @@ class HomeFragment(
         mMapView.onSaveInstanceState(mapViewBundle)
         super.onSaveInstanceState(outState)
     }
-
     override fun onStart() {
         mMapView.onStart()
         super.onStart()
     }
-
     override fun onResume() {
         mMapView.onResume()
         super.onResume()
     }
-
     override fun onPause() {
         mMapView.onPause()
         super.onPause()
     }
-
     override fun onStop() {
         mMapView.onStop()
         super.onStop()
     }
-
     override fun onDestroy() {
         mMapView.onDestroy()
         super.onDestroy()
     }
-
     override fun onLowMemory() {
         mMapView.onLowMemory()
         super.onLowMemory()

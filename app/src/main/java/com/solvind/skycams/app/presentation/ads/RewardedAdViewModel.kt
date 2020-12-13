@@ -6,7 +6,7 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.solvind.skycams.app.core.Failure
 import com.solvind.skycams.app.core.Resource
-import com.solvind.skycams.app.domain.usecases.UpdateAlarmConfigTimeUseCase
+import com.solvind.skycams.app.domain.usecases.alarm.RewardUserAlarmTimeUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
 @ExperimentalCoroutinesApi
 class RewardedAdViewModel @ViewModelInject constructor(
     private val mRewardedAdLoader: RewardedAdLoader,
-    private val mUpdateAlarmConfigTimeUseCase: UpdateAlarmConfigTimeUseCase
+    private val mRewardUserAlarmTimeUseCase: RewardUserAlarmTimeUseCase
 ) : ViewModel() {
 
     val rewardedAdStatus = mRewardedAdLoader.getRewardedAdStatusFlow().asLiveData()
@@ -29,12 +29,11 @@ class RewardedAdViewModel @ViewModelInject constructor(
      * */
     fun rewardUser(skycamKey: String, rewardedMinutes: Int) = viewModelScope.launch {
         val rewardedSeconds = TimeUnit.MINUTES.toSeconds(rewardedMinutes.toLong())
-        mUpdateAlarmConfigTimeUseCase(this, UpdateAlarmConfigTimeUseCase.Params(skycamKey, rewardedSeconds)) {
+        mRewardUserAlarmTimeUseCase(this, RewardUserAlarmTimeUseCase.Params(skycamKey, rewardedSeconds)) {
             when(it) {
                 is Resource.Success -> mUserRewardEvent.value = UserRewardEvent.UserRewardedSuccesfully(rewardedMinutes)
                 is Resource.Error -> {
                     mUserRewardEvent.value = UserRewardEvent.UserNotRewarded(it.failure)
-
                 }
             }
         }

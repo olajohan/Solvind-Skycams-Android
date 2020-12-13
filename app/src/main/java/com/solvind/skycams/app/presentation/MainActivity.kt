@@ -54,7 +54,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
         bottom_nav.setupWithNavController(navController)
     }
@@ -91,20 +92,24 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         }
     }
 
-    fun onClickWatchAdForReward(view: View) =
-        Intent(this, RewardedAdActivity::class.java).apply {
-            view.tag?.let { tag ->
-                when (tag) {
-                    is String -> {
-                        action = ACTIVITY_WATCH_AD_INTENT_ACTION
-                        putExtra(INTENT_EXTRA_SKYCAMKEY, tag)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        startActivity(this)
-                    }
-                }
+    fun onClickWatchAdButton(view: View) {
+        view.tag?.let { tag ->
+            if (tag is String) {
+                watchAdForReward(tag)
             }
+        }
+    }
+
+    fun watchAdForReward(skycamKey: String) =
+        Intent(this, RewardedAdActivity::class.java).apply {
+            action = ACTIVITY_WATCH_AD_INTENT_ACTION
+            putExtra(INTENT_EXTRA_SKYCAMKEY, skycamKey)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(this)
+
 
         }
+
 
     fun onClickNavigateToSingleSkycam(view: View) {
         view.tag.let { tag ->
@@ -116,13 +121,20 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         }
     }
 
-    private fun navigateToSingleSkycam(skycamKey: String, skycamName: String, skycamMainImage: String) {
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        navHostFragment.navController.navigate(SingleSkycamFragmentDirections.actionNavigateToSingle(
-            skycamKey,
-            skycamName,
-            skycamMainImage
-        ))
+    private fun navigateToSingleSkycam(
+        skycamKey: String,
+        skycamName: String,
+        skycamMainImage: String
+    ) {
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navHostFragment.navController.navigate(
+            SingleSkycamFragmentDirections.actionNavigateToSingle(
+                skycamKey,
+                skycamName,
+                skycamMainImage
+            )
+        )
     }
 
     /**

@@ -57,7 +57,10 @@ class InitActivity : AppCompatActivity() {
 
     private val mAuthStateListener = FirebaseAuth.AuthStateListener {
         if (it.currentUser == null) launchSignInFirebaseActivityForResult()
-        else initializeAndLaunchMainActivity()
+        else {
+            Timber.i("Current user: ${it.currentUser?.uid}")
+            initializeAndLaunchMainActivity()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

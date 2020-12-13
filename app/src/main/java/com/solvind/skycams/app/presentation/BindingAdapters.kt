@@ -11,6 +11,7 @@ import com.google.android.material.card.MaterialCardView
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import com.solvind.skycams.app.presentation.home.TimeSinceChronometer
+import com.solvind.skycams.app.presentation.home.TimeUntilChronometer
 import io.github.rosariopfernandes.firecoil.load
 import timber.log.Timber
 import java.time.Instant
@@ -90,8 +91,12 @@ object BindingAdapters {
     }
 
     @JvmStatic
-    @BindingAdapter("reset_chronometer")
+    @BindingAdapter("reset_time_since_chronometer")
     fun convertTimestampToTimeSince(view: TimeSinceChronometer, epochSeconds: Long) = view.reset(epochSeconds)
+
+    @JvmStatic
+    @BindingAdapter("reset_time_until_chronometer")
+    fun convertTimestampToTimeUntil(view: TimeUntilChronometer, epochSeconds: Long) = view.reset(epochSeconds)
 
     @JvmStatic
     @BindingAdapter("set_alarm_button_enabled_state")

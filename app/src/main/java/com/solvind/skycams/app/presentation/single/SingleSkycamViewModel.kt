@@ -6,12 +6,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.solvind.skycams.app.domain.usecases.GetAlarmConfigUseCase
-import com.solvind.skycams.app.domain.usecases.UpdateAlarmConfigTimeUseCase
+import com.solvind.skycams.app.domain.usecases.alarm.GetAlarmConfigUseCase
+import com.solvind.skycams.app.domain.usecases.alarm.RewardUserAlarmTimeUseCase
 
 class SingleSkycamViewModel @ViewModelInject constructor(
     private val getAlarmConfigUseCase: GetAlarmConfigUseCase,
-    private val updateAlarmConfigTimeUseCase: UpdateAlarmConfigTimeUseCase,
+    private val rewardUserAlarmTimeUseCase: RewardUserAlarmTimeUseCase,
     @Assisted private val args: SavedStateHandle
 ) : ViewModel() {
 

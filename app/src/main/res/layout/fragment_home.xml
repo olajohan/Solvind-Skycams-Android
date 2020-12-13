@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <data>
+
         <variable
             name="viewModel"
             type="com.solvind.skycams.app.presentation.home.HomeViewModel" />
@@ -19,8 +20,7 @@
         <com.google.android.gms.maps.MapView
             android:id="@+id/mapView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            />
+            android:layout_height="match_parent" />
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/bottom_sheet"
@@ -33,100 +33,232 @@
             app:bottomSheetState="@{viewModel.bottomSheetState.state}"
             app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <!-- Title, secondary and supporting text -->
-
-                    <TextView
-                        android:id="@+id/skycam_title_textView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@{viewModel.selectedSkycam.location.name}"
-                        android:textAppearance="?attr/textAppearanceHeadline6" />
-
-                    <com.solvind.skycams.app.presentation.home.TimeSinceChronometer
-                        android:id="@+id/last_update_textView"
-                        reset_chronometer="@{viewModel.selectedSkycam.mostRecentImage.timestamp}"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:layout_weight="1"
-                        android:textAppearance="?attr/textAppearanceBody2"
-                        android:textColor="?android:attr/textColorSecondary" />
-
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <!-- Media -->
-                    <ImageView
-                        android:id="@+id/liveImage_imageView"
-                        load_skycam_image="@{viewModel.selectedSkycam.mostRecentImage.storageLocation}"
-                        android:layout_width="match_parent"
-                        android:layout_height="360dp"
-                        android:adjustViewBounds="true"
-                        android:scaleType="fitCenter" />
-
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:tag="@{viewModel.selectedSkycam}"
-                        android:layout_margin="8dp"
-                        android:layout_weight="1"
-                        android:text="Details"
-                        android:onClick="onClickNavigateToSingleSkycam"
-                        />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:tag="@{viewModel.selectedSkycam.skycamKey}"
-                        android:layout_margin="8dp"
-                        android:layout_weight="1"
-                        android:text="+30 min"
-                        android:onClick="onClickWatchAdForReward"
-                        />
-
-                </LinearLayout>
-
-            </LinearLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:layout_marginBottom="16dp"
+                app:layout_anchor="@+id/mapView"
+                app:layout_anchorGravity="bottom|center">
+
+                <TextView
+                    android:id="@+id/skycam_title_textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_weight="1"
+                    android:text="@{viewModel.selectedSkycam.location.name}"
+                    android:textAppearance="?attr/textAppearanceHeadline6"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:text="Skaidi Hotel" />
+
+                <com.solvind.skycams.app.presentation.home.TimeSinceChronometer
+                    android:id="@+id/last_update_textView"
+                    reset_time_since_chronometer="@{viewModel.selectedSkycam.mostRecentImage.timestamp}"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:textColor="?android:attr/textColorSecondary"
+                    app:layout_constraintStart_toStartOf="@+id/skycam_title_textView"
+                    app:layout_constraintTop_toBottomOf="@+id/skycam_title_textView"
+                    tools:text="33 Seconds ago" />
+
+                <ImageView
+                    android:id="@+id/skycam_main_image_imageView"
+                    load_main_image_thumb="@{viewModel.selectedSkycam.mainImage}"
+                    android:layout_width="65dp"
+                    android:layout_height="65dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginEnd="16dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:srcCompat="@drawable/skaidi_main" />
+
+                <ImageView
+                    android:id="@+id/liveImage_imageView"
+                    load_skycam_image="@{viewModel.selectedSkycam.mostRecentImage.storageLocation}"
+                    android:layout_width="match_parent"
+                    android:layout_height="320dp"
+                    android:layout_marginTop="8dp"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/skycam_main_image_imageView"
+                    tools:srcCompat="@drawable/lyngennorth_1607650957" />
+
+
+                <TextView
+                    android:id="@+id/alarm_time_remaining_tile_textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="16dp"
+                    android:text="Timeout"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/liveImage_imageView" />
+
+                <com.solvind.skycams.app.presentation.home.TimeUntilChronometer
+                    android:id="@+id/alarm_time_remaining_percent_textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:text="--:--"
+                    reset_time_until_chronometer="@{viewModel.selectedAlarmConfig.alarmAvailableUntilEpochSeconds}"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                    app:layout_constraintBottom_toBottomOf="@+id/alarm_time_remaining_tile_textView"
+                    app:layout_constraintStart_toEndOf="@+id/alarm_time_remaining_tile_textView"
+                    app:layout_constraintTop_toTopOf="@+id/alarm_time_remaining_tile_textView"
+                    tools:text="29:33" />
+
+                <Button
+                    android:id="@+id/watchAd_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:onClick="onClickWatchAdButton"
+                    android:tag="@{viewModel.selectedSkycam.skycamKey}"
+                    android:text="+30 min"
+                    app:layout_constraintBottom_toBottomOf="@+id/alarm_time_remaining_tile_textView"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/alarm_time_remaining_tile_textView" />
+
+                <View
+                    android:id="@+id/divider4"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="8dp"
+                    android:background="?android:attr/listDivider"
+                    app:layout_constraintTop_toBottomOf="@+id/watchAd_button"
+                    tools:layout_editor_absoluteX="3dp" />
+
+                <View
+                    android:id="@+id/divider3"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="8dp"
+                    android:background="?android:attr/listDivider"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/activateAlarm_frame" />
+
+                <LinearLayout
+                    android:id="@+id/activateAlarm_frame"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="16dp"
+                    android:orientation="vertical"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/divider4">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.6"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/activateAlarm_title_textView"
+                                style="@android:style/TextAppearance.DeviceDefault.SearchResult.Title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="State" />
+
+                            <TextView
+                                android:id="@+id/activate_alarm_summary_textView"
+                                style="@android:style/TextAppearance.DeviceDefault.SearchResult.Subtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Activate/deactivate the alarm. " />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <com.google.android.material.switchmaterial.SwitchMaterial
+                                android:id="@+id/activate_alarm_switch"
+                                android:checked="@{viewModel.selectedAlarmConfig.active}"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/thresholdFrame"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="16dp"
+                    android:orientation="vertical"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/divider3">
+
+                    <TextView
+                        android:id="@+id/threshold_title_textView"
+                        style="@android:style/TextAppearance.DeviceDefault.SearchResult.Title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Threshold" />
+
+                    <TextView
+                        android:id="@+id/threshold_summary_textView"
+                        style="@android:style/TextAppearance.DeviceDefault.SearchResult.Subtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="A high threshold will give fewer and more prcesise alarms" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="horizontal">
+
+                        <SeekBar
+                            android:id="@+id/threshold_seekbar"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_weight="0.5"
+                            android:max="100"
+                            android:min="51"/>
+
+                        <TextView
+                            android:id="@+id/threshold_percent_textView"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.2"
+                            android:gravity="center"
+                            android:textAlignment="center"
+                            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+                    </LinearLayout>
+
+                </LinearLayout>
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
         </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_anchor="@id/bottom_sheet"
-            app:useCompatPadding="true"
-            android:layout_gravity="center|end"
-            app:layout_anchorGravity="top|end"
-            />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>

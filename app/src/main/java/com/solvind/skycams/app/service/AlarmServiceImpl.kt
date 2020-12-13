@@ -8,8 +8,8 @@ import androidx.lifecycle.lifecycleScope
 import com.solvind.skycams.app.core.*
 import com.solvind.skycams.app.domain.enums.AuroraPrediction
 import com.solvind.skycams.app.domain.model.AlarmConfig
-import com.solvind.skycams.app.domain.usecases.DeactivateAlarmConfigUseCase
-import com.solvind.skycams.app.domain.usecases.GetAllAlarmsFlowUseCase
+import com.solvind.skycams.app.domain.usecases.alarm.DeactivateAlarmConfigUseCase
+import com.solvind.skycams.app.domain.usecases.alarm.GetAllAlarmsFlowUseCase
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -112,7 +112,7 @@ class AlarmServiceImpl : LifecycleService() {
     private fun startSkycamUpdateListener() = lifecycleScope.launch {
         for (predictedSkycamUpdate in mSkycamListenerHandler.skycamUpdateChannel) {
             val auroraPrediction = predictedSkycamUpdate.skycam.mostRecentImage.prediction
-            if (auroraPrediction is AuroraPrediction.VisibleAurora && auroraPrediction.confidence > 0.75) {
+            if (auroraPrediction is AuroraPrediction.VisibleAurora && auroraPrediction.confidence > predictedSkycamUpdate.alarmConfig.threshold) {
                 mAlarmNotificationHandler.showAlarmNotification(predictedSkycamUpdate.skycam)
             }
             mForegroundNotificationHandler.updateActiveAlarm(predictedSkycamUpdate)
@@ -185,7 +185,7 @@ class AlarmServiceImpl : LifecycleService() {
         }
     }
 
-    override fun onBind(intent: Intent): IBinder? {
+    override fun onBind(intent: Intent): IBinder {
         super.onBind(intent)
         return binder
     }

@@ -5,7 +5,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.solvind.skycams.app.core.Failure
 import com.solvind.skycams.app.core.Resource
 import com.solvind.skycams.app.core.UserIdIsNullException
-import com.solvind.skycams.app.data.repo.mappers.SnapshotToAlarmMapper
+import com.solvind.skycams.app.data.repo.mappers.SnapshotToAlarmConfigMapper
 import com.solvind.skycams.app.domain.model.AlarmConfig
 import com.solvind.skycams.app.domain.repo.IAlarmConfigRepo
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,7 +23,7 @@ private const val ALARMS_COLLECTION = "alarms"
 class FirestoreAlarmConfigRepoImpl @Inject constructor(
     private val firestore: FirebaseFirestore,
     private val firebaseAuth: FirebaseAuth,
-    private val mapper: SnapshotToAlarmMapper
+    private val configMapper: SnapshotToAlarmConfigMapper
 ) : IAlarmConfigRepo {
 
     override suspend fun getAlarmConfig(skycamKey: String): Resource<AlarmConfig> {
@@ -33,7 +33,7 @@ class FirestoreAlarmConfigRepoImpl @Inject constructor(
                 ALARMS_COLLECTION
             ).document(skycamKey).get().await()
         if (!skycamAlarmDocumentSnapshot.exists()) return Resource.Error(Failure.AlarmNotFoundFailure)
-        return Resource.Success(mapper.singleFromLeftToRight(skycamAlarmDocumentSnapshot))
+        return Resource.Success(configMapper.singleFromLeftToRight(skycamAlarmDocumentSnapshot))
     }
 
     /**
@@ -48,7 +48,7 @@ class FirestoreAlarmConfigRepoImpl @Inject constructor(
         val subscription = document.addSnapshotListener { snapshot, error ->
             if (error != null) throw error
             if (snapshot != null && snapshot.exists()) offer(
-                mapper.singleFromLeftToRight(
+                configMapper.singleFromLeftToRight(
                     snapshot
                 )
             )
@@ -70,7 +70,7 @@ class FirestoreAlarmConfigRepoImpl @Inject constructor(
             }
             if (querySnapshot != null && !querySnapshot.isEmpty)  {
                 querySnapshot.documents.forEach {
-                    offer(mapper.singleFromLeftToRight(it))
+                    offer(configMapper.singleFromLeftToRight(it))
                 }
             }
         }
@@ -84,24 +84,26 @@ class FirestoreAlarmConfigRepoImpl @Inject constructor(
 
         val documents = result.await().documents
         if (!result.isSuccessful) return Resource.Error(Failure.FailedToGetAllAlarmsFailure)
-        return Resource.Success(mapper.listFromLeftToRight(documents))
+        return Resource.Success(configMapper.listFromLeftToRight(documents))
     }
 
     override suspend fun setAlarmConfig(
         skycamKey: String,
         alarmAvailableUntil: Long,
-        isActive: Boolean
-    ): Resource<Unit> {
+        isActive: Boolean,
+        threshold: Int
+    ): Resource<AlarmConfig> {
         val uid = firebaseAuth.uid ?: return Resource.Error(Failure.UserIdNullFailure)
         val result = firestore.collection(USER_DATA_COLLECTION).document(uid)
             .collection(ALARMS_COLLECTION).document(skycamKey).set(
                 mapOf(
                     "alarmAvailableUntilEpochSeconds" to alarmAvailableUntil,
-                    "isActive" to isActive
+                    "isActive" to isActive,
+                    "threshold" to threshold
                 )
             )
         result.await()
         if (!result.isSuccessful) return Resource.Error(Failure.FailedToSetAlarmFailure)
-        return Resource.Success(Unit)
+        return Resource.Success(AlarmConfig(skycamKey, alarmAvailableUntil, isActive, threshold))
     }
 }

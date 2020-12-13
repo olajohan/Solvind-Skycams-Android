@@ -1,7 +1,7 @@
 package com.solvind.skycams.app.service
 
 import androidx.test.rule.ServiceTestRule
-import com.solvind.skycams.app.domain.usecases.GetAllAlarmsFlowUseCase
+import com.solvind.skycams.app.domain.usecases.alarm.GetAllAlarmsFlowUseCase
 import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest

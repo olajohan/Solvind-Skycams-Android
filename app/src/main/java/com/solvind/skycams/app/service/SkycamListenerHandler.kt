@@ -5,7 +5,7 @@ import com.solvind.skycams.app.di.IoDispatcher
 import com.solvind.skycams.app.domain.enums.AuroraPrediction
 import com.solvind.skycams.app.domain.model.AlarmConfig
 import com.solvind.skycams.app.domain.model.Skycam
-import com.solvind.skycams.app.domain.usecases.GetSkycamFlowUseCase
+import com.solvind.skycams.app.domain.usecases.skycam.GetSkycamFlowUseCase
 import dagger.hilt.android.scopes.ServiceScoped
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -72,7 +72,7 @@ class SkycamListenerHandler @Inject constructor(
      * with the cause of the deactivation representet as a [AlarmStatusUpdate]
      *
      *
-     * @param scope the [LifecycleCoroutineScope] in which the listening job should exsist
+     * @param scope the [LifecycleCoroutineScope] in which the listening job should exist
      * @param alarmConfig the [AlarmConfig] of the skycam that we should start listening for updates
      * */
     fun startListeningToSkycam(scope: LifecycleCoroutineScope, alarmConfig: AlarmConfig) =
